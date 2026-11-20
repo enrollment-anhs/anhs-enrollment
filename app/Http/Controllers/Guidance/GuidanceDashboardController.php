@@ -11,7 +11,6 @@ use App\Http\Requests\Guidance\UpdateEnrollmentStatusRequest;
 use App\Http\Requests\Guidance\UpdatePlacementStatusRequest;
 use App\Models\AcademicYear;
 use App\Models\Cluster;
-use App\Models\Curriculum;
 use App\Models\DocumentReturnReason;
 use App\Models\DocumentStatus;
 use App\Models\DocumentType;
@@ -21,7 +20,6 @@ use App\Models\GradeLevel;
 use App\Models\LearnerType;
 use App\Models\PlacementStatus;
 use App\Models\PromotionStatus;
-use App\Models\Room;
 use App\Models\Section;
 use App\Models\Staff;
 use App\Models\StudentDocument;
@@ -32,12 +30,12 @@ use App\Support\PlacementAssessmentAdvisor;
 use App\Support\PromotionEligibility;
 use App\Support\PromotionRegistrar;
 use App\Support\RetainedEnrollmentRegistrar;
-use App\Support\StudentAccountProvisioner;
 use App\Support\StudentEnrollmentNotifier;
 use App\Support\StudentPlacementTestNotifier;
 use App\Support\VacantSectionAssigner;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Database\QueryException;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -788,6 +786,10 @@ class GuidanceDashboardController extends Controller
         $gradeLevel = $request->string('grade_level')->toString();
         $gradeId = GradeLevel::idForValue($gradeLevel);
         $clusterId = $request->string('cluster_id')->toString();
+        $search = trim($request->string('search')->toString());
+        $availability = $request->string('availability')->toString();
+        $activeStatusIds = implode(',', array_map('intval', EnrollmentStatus::activeIds())) ?: '0';
+        $activeEnrollmentCount = "(SELECT COUNT(*) FROM enrollments WHERE enrollments.section_ID = sections.section_ID AND enrollments.enrollment_status_ID IN ({$activeStatusIds}))";
         $perPage = (int) $request->integer('per_page', 16);
 
         $sectionsQuery = Section::query()
@@ -799,6 +801,21 @@ class GuidanceDashboardController extends Controller
             ->when($activeYear, fn ($q) => $q->where('SY_ID', $activeYear->SY_ID))
             ->when($gradeId, fn ($q) => $q->where('grade_ID', $gradeId))
             ->when($clusterId !== '', fn ($q) => $q->where('cluster_ID', $clusterId))
+            ->when($search !== '', function ($query) use ($search): void {
+                $query->where(function ($sectionQuery) use ($search): void {
+                    $sectionQuery->where('name', 'like', "%{$search}%")
+                        ->orWhere('room', 'like', "%{$search}%")
+                        ->orWhereHas('adviser', fn ($adviserQuery) => $adviserQuery
+                            ->where('first_name', 'like', "%{$search}%")
+                            ->orWhere('last_name', 'like', "%{$search}%"));
+                });
+            })
+            ->when($availability === 'available', fn ($q) => $q->where(function ($availabilityQuery) use ($activeEnrollmentCount): void {
+                $availabilityQuery->whereNull('sections.capacity')
+                    ->orWhere('sections.capacity', 0)
+                    ->orWhereRaw("{$activeEnrollmentCount} < sections.capacity");
+            }))
+            ->when($availability === 'full', fn ($q) => $q->where('sections.capacity', '>', 0)->whereRaw("{$activeEnrollmentCount} >= sections.capacity"))
             ->orderBy('grade_ID')
             ->orderBy('name');
 
@@ -817,7 +834,6 @@ class GuidanceDashboardController extends Controller
         $showClusterColumn = in_array($gradeLevel, ['grade_11', 'grade_12'], true);
 
         return view('users.guidance.sections.index', [
-            'rooms' => Room::query()->orderBy('name')->get(['name']),
             'activeYear' => $activeYear,
             'sections' => $sections,
             'gradeLevels' => $gradeLevels,
@@ -839,22 +855,27 @@ class GuidanceDashboardController extends Controller
             $validated['cluster_ID'] = null;
         }
 
-        $curriculumId = VacantSectionAssigner::curriculumIdFor($validated['grade_level'], $validated['cluster_ID'] ?? null);
+        $gradeId = GradeLevel::idForValue($validated['grade_level']);
 
-        if ($curriculumId === null) {
-            return back()->withErrors(['grade_level' => 'Unable to determine the curriculum for this section. Contact an administrator.'])->withInput();
+        if (! $gradeId) {
+            return back()->withErrors(['grade_level' => 'The selected grade level is unavailable.'])->withInput();
         }
 
-        $validated['curriculum_grade_level_ID'] = $curriculumId;
-        $offering = Curriculum::query()->findOrFail($curriculumId);
-        $validated['grade_ID'] = $offering->grade_ID;
-        $validated['cluster_ID'] = $offering->cluster_ID;
+        $validated['grade_ID'] = $gradeId;
 
         unset($validated['grade_level']);
 
-        Section::query()->create($validated);
+        try {
+            Section::query()->create($validated);
+        } catch (QueryException $exception) {
+            report($exception);
 
-        return back()->with('success', 'Section created successfully.');
+            return back()
+                ->withInput()
+                ->with('toast_error', 'The section could not be created. Please try again.');
+        }
+
+        return back()->with('toast_success', 'Section created successfully.');
     }
 
     public function sectionsShow(Section $section): View
@@ -888,7 +909,6 @@ class GuidanceDashboardController extends Controller
         $clusters = Cluster::query()->orderBy('name')->get(['cluster_ID', 'name']);
 
         return view('users.guidance.sections.show', [
-            'rooms' => Room::query()->orderBy('name')->get(['name']),
             'section' => $section,
             'targetSections' => $targetSections,
             'staffs' => $staffs,
@@ -899,7 +919,6 @@ class GuidanceDashboardController extends Controller
     public function updateSection(Request $request, Section $section): RedirectResponse
     {
         $validated = $request->validate([
-            'room' => ['nullable', 'string', 'max:255', Rule::exists('rooms', 'name')],
             'capacity' => ['required', 'integer', 'digits_between:1,3', 'min:1', 'max:100'],
             'staff_ID' => ['nullable', 'integer', Rule::exists('staffs', 'staff_id')],
             'cluster_ID' => ['nullable', 'integer', Rule::exists('clusters', 'cluster_ID')],
@@ -934,18 +953,10 @@ class GuidanceDashboardController extends Controller
                 ]);
         }
 
-        $curriculumId = VacantSectionAssigner::curriculumIdFor($gradeLevel, $validated['cluster_ID'] ?? null);
-
-        if ($curriculumId === null) {
-            return back()->withErrors(['cluster_ID' => 'Unable to determine the curriculum for this section. Contact an administrator.'])->withInput();
-        }
-
         $section->update([
-            'room' => $validated['room'] ?: null,
             'capacity' => (int) $validated['capacity'],
             'staff_ID' => $validated['staff_ID'] ?? null,
             'cluster_ID' => $validated['cluster_ID'] ?? null,
-            'curriculum_grade_level_ID' => $curriculumId,
         ]);
 
         return back()->with('status', 'Section details updated successfully.');
@@ -1031,20 +1042,28 @@ class GuidanceDashboardController extends Controller
                 ]);
         }
 
-        DB::transaction(function () use ($enrollments, $targetSection): void {
-            foreach ($enrollments as $enrollment) {
-                $enrollment->update([
-                    'section_ID' => $targetSection->section_ID,
-                    'cluster_ID' => $targetSection->cluster_ID,
-                ]);
-            }
-        });
+        try {
+            DB::transaction(function () use ($enrollments, $targetSection): void {
+                foreach ($enrollments as $enrollment) {
+                    $enrollment->update([
+                        'section_ID' => $targetSection->section_ID,
+                        'cluster_ID' => $targetSection->cluster_ID,
+                    ]);
+                }
+            });
+        } catch (QueryException $exception) {
+            report($exception);
+
+            return back()
+                ->withInput()
+                ->with('toast_error', 'The students could not be transferred. Please try again.');
+        }
 
         $count = $enrollments->count();
 
         return redirect()
             ->route('guidance.sections.show', $section)
-            ->with('status', "{$count} student(s) transferred to {$targetSection->name}.");
+            ->with('toast_success', "{$count} student(s) transferred to {$targetSection->name}.");
     }
 
     public function sectionsClassList(Section $section): View
@@ -1067,6 +1086,10 @@ class GuidanceDashboardController extends Controller
         $gradeLevel = $request->string('grade_level')->toString();
         $gradeId = GradeLevel::idForValue($gradeLevel);
         $clusterId = $request->string('cluster_id')->toString();
+        $search = trim($request->string('search')->toString());
+        $availability = $request->string('availability')->toString();
+        $activeStatusIds = implode(',', array_map('intval', EnrollmentStatus::activeIds())) ?: '0';
+        $activeEnrollmentCount = "(SELECT COUNT(*) FROM enrollments WHERE enrollments.section_ID = sections.section_ID AND enrollments.enrollment_status_ID IN ({$activeStatusIds}))";
 
         $sections = Section::query()
             ->active()
@@ -1075,23 +1098,53 @@ class GuidanceDashboardController extends Controller
                 'gradeLevel',
                 'adviser',
                 'academicYear',
-                'enrollments.gradeLevel',
-                'enrollments.student.application',
-                'enrollments.enrollmentStatus',
-                'enrollments.student.profile',
-                'enrollments.student.guardians',
-                'enrollments.student.addresses',
             ])
+            ->withCount(['enrollments as enrollments_count' => function ($query) {
+                $query->whereIn('enrollment_status_ID', EnrollmentStatus::activeIds());
+            }])
             ->when($activeYear, fn ($q) => $q->where('SY_ID', $activeYear->SY_ID))
             ->when($gradeId, fn ($q) => $q->where('grade_ID', $gradeId))
             ->when($clusterId !== '', fn ($q) => $q->where('cluster_ID', $clusterId))
+            ->when($search !== '', function ($query) use ($search): void {
+                $query->where(function ($sectionQuery) use ($search): void {
+                    $sectionQuery->where('name', 'like', "%{$search}%")
+                        ->orWhere('room', 'like', "%{$search}%")
+                        ->orWhereHas('adviser', fn ($adviserQuery) => $adviserQuery
+                            ->where('first_name', 'like', "%{$search}%")
+                            ->orWhere('last_name', 'like', "%{$search}%"));
+                });
+            })
+            ->when($availability === 'available', fn ($q) => $q->where(function ($availabilityQuery) use ($activeEnrollmentCount): void {
+                $availabilityQuery->whereNull('sections.capacity')
+                    ->orWhere('sections.capacity', 0)
+                    ->orWhereRaw("{$activeEnrollmentCount} < sections.capacity");
+            }))
+            ->when($availability === 'full', fn ($q) => $q->where('sections.capacity', '>', 0)->whereRaw("{$activeEnrollmentCount} >= sections.capacity"))
             ->orderBy('grade_ID')
             ->orderBy('name')
             ->get();
 
+        $summary = [
+            'enrolled' => 0,
+            'temporarily_enrolled' => 0,
+            'total' => 0,
+        ];
+        if ($activeYear) {
+            $summary['enrolled'] = Enrollment::query()
+                ->where('SY_ID', $activeYear->SY_ID)
+                ->where('enrollment_status_ID', EnrollmentStatus::idFor(EnrollmentStatus::ENROLLED))
+                ->count();
+            $summary['temporarily_enrolled'] = Enrollment::query()
+                ->where('SY_ID', $activeYear->SY_ID)
+                ->where('enrollment_status_ID', EnrollmentStatus::idFor(EnrollmentStatus::TEMPORARILY_ENROLLED))
+                ->count();
+            $summary['total'] = $summary['enrolled'] + $summary['temporarily_enrolled'];
+        }
+
         return view('users.guidance.sections.master-list', [
             'activeYear' => $activeYear,
             'sections' => $sections,
+            'summary' => $summary,
         ]);
     }
 
@@ -1250,9 +1303,6 @@ class GuidanceDashboardController extends Controller
 
             $enrollment->update($payload);
 
-            if (in_array($status, EnrollmentStatus::activeSlugs(), true)) {
-                $account = $this->ensureStudentAccount($enrollment, $request);
-            }
         });
 
         $enrollment->loadMissing('section');
@@ -1264,11 +1314,4 @@ class GuidanceDashboardController extends Controller
         ];
     }
 
-    /**
-     * @return array{student_name: string, username: string, password: string}|null
-     */
-    private function ensureStudentAccount(Enrollment $enrollment, Request $request): ?array
-    {
-        return StudentAccountProvisioner::ensure($enrollment, $request->user());
-    }
 }

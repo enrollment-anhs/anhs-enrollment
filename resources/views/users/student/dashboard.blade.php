@@ -62,20 +62,6 @@
             'icon' => 'user',
         ],
         [
-            'label' => 'Subjects',
-            'href' => route('student.subjects'),
-            'card' => 'bg-emerald-500 text-white hover:bg-emerald-600',
-            'iconWrap' => 'bg-white/15 text-white',
-            'icon' => 'book',
-        ],
-        [
-            'label' => 'Grades',
-            'href' => route('student.grades'),
-            'card' => 'bg-amber-400 text-amber-950 hover:bg-amber-300',
-            'iconWrap' => 'bg-amber-950/10 text-amber-950',
-            'icon' => 'chart',
-        ],
-        [
             'label' => 'Documents',
             'href' => route('student.documents'),
             'card' => 'bg-sky-500 text-white hover:bg-sky-600',

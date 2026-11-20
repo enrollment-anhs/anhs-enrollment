@@ -35,14 +35,13 @@ class EnrollmentReportController extends Controller
         $query = DB::table('enrollments as e')
             ->leftJoin('students as s', 's.id', '=', 'e.student_ID')
             ->leftJoin('academic_years as y', 'y.SY_ID', '=', 'e.SY_ID')
-            ->leftJoin('curriculum_grade_levels as c', 'c.curriculum_ID', '=', 'e.curriculum_grade_level_ID')
-            ->leftJoin('grade_level as g', 'g.grade_ID', '=', 'c.grade_ID')
+            ->leftJoin('grade_level as g', 'g.grade_ID', '=', 'e.grade_ID')
             ->leftJoin('sections as sec', 'sec.section_ID', '=', 'e.section_ID')
-            ->leftJoin('clusters as cl', 'cl.cluster_ID', '=', 'c.cluster_ID')
+            ->leftJoin('clusters as cl', 'cl.cluster_ID', '=', 'e.cluster_ID')
             ->leftJoin('enrollment_statuses as es', 'es.enrollment_status_ID', '=', 'e.enrollment_status_ID')
             ->leftJoin('learner_types as lt', 'lt.learner_type_ID', '=', 'e.learner_type_ID');
 
-        foreach (['grade_id' => 'c.grade_ID', 'status' => 'es.slug', 'learner_type' => 'lt.slug'] as $key => $column) {
+        foreach (['grade_id' => 'e.grade_ID', 'status' => 'es.slug', 'learner_type' => 'lt.slug'] as $key => $column) {
             if (filled($filters[$key] ?? null)) {
                 $query->where($column, $filters[$key]);
             }

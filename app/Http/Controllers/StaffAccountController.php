@@ -27,7 +27,7 @@ class StaffAccountController extends Controller
         $staff = $this->staff($request)->loadMissing('specialization');
         $role = match ($staff->roleName()) {
             'guidance counselor' => 'guidance',
-            'admin', 'principal', 'registrar', 'teacher' => $staff->roleName(),
+            'admin', 'principal', 'teacher' => $staff->roleName(),
             default => abort(403),
         };
 

@@ -2,18 +2,18 @@
 
 use App\Http\Controllers\Guidance\GuidanceDashboardController;
 use App\Http\Controllers\Guidance\GuidanceEnrollmentController;
-use App\Http\Controllers\Registrar\RegistrarDashboardController;
+use App\Http\Controllers\AcademicRecordsController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/students', [RegistrarDashboardController::class, 'students'])
+Route::get('/students', [AcademicRecordsController::class, 'students'])
     ->name('students');
-Route::get('/students/{student}', [RegistrarDashboardController::class, 'show'])
+Route::get('/students/{student}', [AcademicRecordsController::class, 'show'])
     ->name('students.show');
-Route::get('/students/{student}/documents/{document}/view', [RegistrarDashboardController::class, 'viewDocument'])
+Route::get('/students/{student}/documents/{document}/view', [AcademicRecordsController::class, 'viewDocument'])
     ->name('students.documents.view');
-Route::get('/students/{student}/enrollments/{enrollment}/sf9', [RegistrarDashboardController::class, 'studentSf9'])
+Route::get('/students/{student}/enrollments/{enrollment}/sf9', [AcademicRecordsController::class, 'studentSf9'])
     ->name('students.sf9');
-Route::get('/students/{student}/sf10', [RegistrarDashboardController::class, 'studentSf10'])
+Route::get('/students/{student}/sf10', [AcademicRecordsController::class, 'studentSf10'])
     ->name('students.sf10');
 Route::get('/enrollments', [GuidanceDashboardController::class, 'enrollments'])
     ->name('enrollments.index');

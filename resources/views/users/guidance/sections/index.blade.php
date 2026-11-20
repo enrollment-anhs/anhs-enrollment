@@ -3,17 +3,17 @@
 @section('title', 'Sectioning')
 
 @section('content')
+@include('users.guidance.enrollments.partials.result-toasts')
+
 <div class="mb-8">
-    <div class="flex items-center gap-3 mb-2">
-        <div class="h-12 w-12 rounded-xl flex items-center justify-center shadow-lg" style="background: linear-gradient(135deg, #296374 0%, #1e4d5c 100%);">
-            <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
-            </svg>
-        </div>
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-2">
         <div>
-            <h1 class="text-2xl md:text-3xl font-bold text-gray-800 tracking-tight">Sectioning</h1>
-            <p class="text-gray-500 text-sm">View and manage class sections for the current school year</p>
+            <h1 class="text-2xl md:text-3xl font-bold text-gray-800 tracking-tight">Sections</h1>
         </div>
+        <button type="button" onclick="openSectionModal()" class="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-95" style="background-color: #296374;">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+            Add Section
+        </button>
     </div>
     @if (!isset($activeYear) || !$activeYear)
         <div class="mt-4 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 flex items-center gap-2">
@@ -23,29 +23,22 @@
     @endif
 </div>
 
-@if (session('success'))
-    <div class="mb-5 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
-        {{ session('success') }}
-    </div>
-@endif
-
-@if ($errors->any())
-    <div class="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
-        @foreach ($errors->all() as $error)
-            <p>{{ $error }}</p>
-        @endforeach
-    </div>
-@endif
-
 @php
     $sectionsList = $sections instanceof \Illuminate\Pagination\LengthAwarePaginator ? $sections->getCollection() : ($sections ?? collect());
+    $viewMode = request('view') === 'list' ? 'list' : 'grid';
+    $sectionViewQuery = request()->except(['page', 'view']);
 @endphp
 
 <div class="mb-6 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
     <form method="GET" action="{{ route('guidance.sections.index') }}" class="flex-1">
         <input type="hidden" name="per_page" value="{{ request('per_page', 16) }}">
+        <input type="hidden" name="view" value="{{ $viewMode }}">
 
         <div class="guidance-filters flex flex-wrap items-center gap-2 rounded-xl border border-gray-200 bg-white/95 p-3 shadow-sm">
+            <div class="relative min-w-[220px] flex-1">
+                <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21-4.35-4.35m1.35-5.65a7 7 0 1 1-14 0 7 7 0 0 1 14 0z"></path></svg>
+                <input type="search" name="search" value="{{ request('search') }}" placeholder="Search section or adviser" class="h-10 w-full rounded-lg border border-gray-200 bg-gray-50 pl-9 pr-3 text-sm text-gray-700 outline-none transition focus:border-[#296374] focus:bg-white focus:ring-2 focus:ring-[#296374]/10">
+            </div>
             <select name="grade_level" id="grade_level" class="h-10 rounded-lg border border-gray-200 bg-white px-3 text-sm font-medium text-gray-700 outline-none transition hover:border-[#296374]/40 focus:border-[#296374] focus:ring-2 focus:ring-[#296374]/10">
                 <option value="">All levels</option>
                 @foreach ($gradeLevels ?? [] as $level)
@@ -62,6 +55,12 @@
                 </select>
             @endif
 
+            <select name="availability" id="availability" class="h-10 rounded-lg border border-gray-200 bg-white px-3 text-sm font-medium text-gray-700 outline-none transition hover:border-[#296374]/40 focus:border-[#296374] focus:ring-2 focus:ring-[#296374]/10">
+                <option value="">All availability</option>
+                <option value="available" @selected(request('availability') === 'available')>Available</option>
+                <option value="full" @selected(request('availability') === 'full')>Full</option>
+            </select>
+
             <button type="submit" class="inline-flex h-10 items-center gap-2 rounded-lg px-4 text-sm font-bold text-white shadow-sm transition hover:opacity-95" style="background-color: #296374;">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h18M6 12h12M10 20h4"></path>
@@ -73,12 +72,16 @@
     </form>
 
     <div class="flex flex-wrap items-center gap-3 shrink-0">
-        <button type="button" onclick="openSectionModal()" class="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-95" style="background-color: #296374;">
-            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-            </svg>
-            Add Section
-        </button>
+        <div class="inline-flex h-10 items-center rounded-lg border border-gray-200 bg-white p-1 shadow-sm" role="group" aria-label="Section view style">
+            <a href="{{ route('guidance.sections.index', array_merge($sectionViewQuery, ['view' => 'grid'])) }}" class="inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-xs font-bold transition {{ $viewMode === 'grid' ? 'bg-[#296374] text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100' }}" aria-current="{{ $viewMode === 'grid' ? 'true' : 'false' }}">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 0h6v6h-6v-6z"></path></svg>
+                Grid
+            </a>
+            <a href="{{ route('guidance.sections.index', array_merge($sectionViewQuery, ['view' => 'list'])) }}" class="inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-xs font-bold transition {{ $viewMode === 'list' ? 'bg-[#296374] text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100' }}" aria-current="{{ $viewMode === 'list' ? 'true' : 'false' }}">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                List
+            </a>
+        </div>
         @if ($sectionsList->isNotEmpty())
             <a href="{{ route('guidance.sections.master-list') . (request()->getQueryString() ? '?' . request()->getQueryString() : '') }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
@@ -89,7 +92,7 @@
 </div>
 
 @if ($sectionsList->isNotEmpty())
-    <div class="guidance-section-grid grid gap-5">
+    <div class="guidance-section-grid grid {{ $viewMode === 'list' ? 'guidance-section-list grid-cols-1 gap-2' : 'gap-5 sm:grid-cols-2 xl:grid-cols-3' }}">
         @foreach($sectionsList as $section)
             @php
                 $cap = (int) ($section->capacity ?? 0);
@@ -105,10 +108,10 @@
                     : 'No adviser';
             @endphp
 
-            <a href="{{ route('guidance.sections.show', $section) }}" class="group relative block min-h-[190px] rounded-lg border border-gray-200/80 bg-white p-5 shadow-md shadow-slate-200/70 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-slate-300/70 focus:outline-none focus:ring-2 focus:ring-[#296374]/30">
+            <a href="{{ route('guidance.sections.show', $section) }}" class="group relative rounded-lg border border-gray-200/80 bg-white p-5 shadow-md shadow-slate-200/70 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-slate-300/70 focus:outline-none focus:ring-2 focus:ring-[#296374]/30 {{ $viewMode === 'list' ? 'flex min-h-0 flex-col gap-4 sm:flex-row sm:items-center' : 'block min-h-[190px]' }}">
                 <span class="absolute right-0 top-4 rounded-l-sm {{ $badgeColor }} px-3 py-1 text-[11px] font-bold lowercase text-white shadow-sm">{{ $statusLabel }}</span>
 
-                <div class="flex items-start gap-4 pr-16">
+                <div class="flex items-start gap-4 pr-16 {{ $viewMode === 'list' ? 'sm:min-w-[220px] sm:flex-1' : '' }}">
                     <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white shadow-md" style="background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);">
                         {{ $gradeInitial }}
                     </span>
@@ -118,11 +121,7 @@
                     </div>
                 </div>
 
-                <div class="mt-6 space-y-3 text-sm text-gray-600">
-                    <div class="flex items-center gap-2">
-                        <svg class="h-4 w-4 shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"></path></svg>
-                        <span class="truncate font-mono">{{ $section->room ?? 'No room assigned' }}</span>
-                    </div>
+                <div class="text-sm text-gray-600 {{ $viewMode === 'list' ? 'flex flex-wrap gap-x-5 gap-y-2 sm:mt-0 sm:w-[420px]' : 'mt-6 space-y-3' }}">
                     <div class="flex items-center gap-2">
                         <svg class="h-4 w-4 shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-4-4h-1M9 20H4v-2a4 4 0 014-4h1m4-5a4 4 0 11-8 0 4 4 0 018 0zm8 0a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                         <span class="font-semibold text-gray-700">{{ $count }}</span>
@@ -140,7 +139,7 @@
                     @endif
                 </div>
 
-                <div class="mt-5">
+                <div class="{{ $viewMode === 'list' ? 'sm:w-40' : 'mt-5' }}">
                     <div class="mb-1 flex items-center justify-between text-[11px] font-bold uppercase tracking-wide text-gray-500">
                         <span>Capacity</span>
                         <span>{{ $pct }}%</span>
@@ -220,15 +219,6 @@
                 </select>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                    <label for="section_room" class="mb-1 block text-sm font-semibold text-gray-700">Room</label>
-                    <select id="section_room" name="room" class="w-full rounded-lg border border-gray-300 px-4 py-2">
-                        <option value="">No room assigned</option>
-                        @foreach ($rooms as $room)
-                            <option value="{{ $room->name }}" @selected(old('room') === $room->name)>{{ $room->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
                 <div>
                     <label for="section_capacity" class="mb-1 block text-sm font-semibold text-gray-700">Capacity</label>
                     <input id="section_capacity" name="capacity" type="text" inputmode="numeric" pattern="[0-9]{1,3}" maxlength="3" autocomplete="off" value="{{ old('capacity') }}" class="w-full rounded-lg border border-gray-300 px-4 py-2 {{ $errors->has('capacity') ? 'border-red-300' : '' }}" required>

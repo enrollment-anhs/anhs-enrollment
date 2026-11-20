@@ -30,8 +30,10 @@ class Enrollment extends Model
         'student_ID',
         'section_ID',
         'SY_ID',
-        'curriculum_grade_level_ID',
+        'grade_ID',
         'track_ID',
+        'cluster_ID',
+        'semester',
         'course_ID',
         'learner_type',
         'learner_type_ID',
@@ -68,12 +70,6 @@ class Enrollment extends Model
     protected static function booted(): void
     {
         static::creating(function (Enrollment $enrollment): void {
-            if (empty($enrollment->attributes['curriculum_grade_level_ID']) && ! empty($enrollment->attributes['section_ID'])) {
-                $enrollment->attributes['curriculum_grade_level_ID'] = Section::query()
-                    ->where('section_ID', $enrollment->attributes['section_ID'])
-                    ->value('curriculum_grade_level_ID');
-            }
-
             if (empty($enrollment->attributes['learner_type_ID'])) {
                 $enrollment->attributes['learner_type_ID'] = LearnerType::idFor(LearnerType::REGULAR);
             }
@@ -87,22 +83,6 @@ class Enrollment extends Model
             }
         });
 
-        static::created(function (Enrollment $enrollment): void {
-            if ($enrollment->curriculum_grade_level_ID) {
-                \App\Support\StudentSubjectRoster::sync($enrollment);
-            }
-        });
-
-        static::updated(function (Enrollment $enrollment): void {
-            if ($enrollment->wasChanged('section_ID') && $enrollment->section_ID && $enrollment->curriculum_grade_level_ID) {
-                $electiveSubjectIds = $enrollment->electives()
-                    ->pluck('subjects.subject_ID')
-                    ->map(fn (mixed $id): int => (int) $id)
-                    ->all();
-
-                \App\Support\StudentSubjectRoster::sync($enrollment, $electiveSubjectIds);
-            }
-        });
     }
 
     public function student(): BelongsTo
@@ -120,31 +100,21 @@ class Enrollment extends Model
         return $this->belongsTo(AcademicYear::class, 'SY_ID', 'SY_ID');
     }
 
-    public function curriculumGradeLevel(): BelongsTo
-    {
-        return $this->belongsTo(Curriculum::class, 'curriculum_grade_level_ID', 'curriculum_ID');
-    }
-
-    /** Limit enrollments by the grade attached to their curriculum offering. */
+    /** Limit enrollments by their selected grade. */
     public function scopeForGrade(Builder $query, int $gradeId): void
     {
-        $query->whereHas('curriculumGradeLevel', fn (Builder $offering) => $offering->where('grade_ID', $gradeId));
+        $query->where('grade_ID', $gradeId);
     }
 
-    /** Sort by the grade attached to the curriculum offering, not a removed enrollment column. */
+    /** Sort by the selected grade. */
     public function scopeOrderByGrade(Builder $query, string $direction = 'asc'): void
     {
-        $query->orderBy(
-            Curriculum::query()
-                ->select('grade_ID')
-                ->whereColumn('curriculum_grade_levels.curriculum_ID', 'enrollments.curriculum_grade_level_ID'),
-            $direction,
-        );
+        $query->orderBy('grade_ID', $direction);
     }
 
-    public function cluster(): HasOneThrough
+    public function cluster(): BelongsTo
     {
-        return $this->hasOneThrough(Cluster::class, Curriculum::class, 'curriculum_ID', 'cluster_ID', 'curriculum_grade_level_ID', 'cluster_ID');
+        return $this->belongsTo(Cluster::class, 'cluster_ID', 'cluster_ID');
     }
 
     public function track(): BelongsTo
@@ -152,18 +122,9 @@ class Enrollment extends Model
         return $this->belongsTo(Track::class, 'track_ID', 'track_ID');
     }
 
-    public function gradingSemester(): HasOneThrough
-    {
-        return $this->hasOneThrough(GradingSemester::class, Curriculum::class, 'curriculum_ID', 'semester_ID', 'curriculum_grade_level_ID', 'semester_ID');
-    }
-
     public function getSemesterAttribute(): ?string
     {
-        $semester = $this->relationLoaded('gradingSemester')
-            ? $this->getRelation('gradingSemester')
-            : $this->gradingSemester()->first();
-
-        return $semester?->key === GradingSemester::FULL_YEAR ? null : $semester?->key;
+        return $this->attributes['semester'] ?? null;
     }
 
     public function preferredCourse(): BelongsTo
@@ -406,9 +367,9 @@ class Enrollment extends Model
         return true;
     }
 
-    public function gradeLevel(): HasOneThrough
+    public function gradeLevel(): BelongsTo
     {
-        return $this->hasOneThrough(GradeLevel::class, Curriculum::class, 'curriculum_ID', 'grade_ID', 'curriculum_grade_level_ID', 'grade_ID');
+        return $this->belongsTo(GradeLevel::class, 'grade_ID', 'grade_ID');
     }
 
     public function getGradeLevelAttribute(): string
@@ -420,24 +381,14 @@ class Enrollment extends Model
         return GradeLevel::labelToValue($gradeLevel?->grade_label);
     }
 
-    /** Derived from the selected curriculum-grade-level offering. */
     public function getGradeIdAttribute(): ?int
     {
-        $offering = $this->relationLoaded('curriculumGradeLevel')
-            ? $this->getRelation('curriculumGradeLevel')
-            : $this->curriculumGradeLevel()->first();
-
-        return $offering?->grade_ID;
+        return $this->attributes['grade_ID'] ?? null;
     }
 
-    /** Derived from the selected curriculum-grade-level offering. */
     public function getClusterIdAttribute(): ?int
     {
-        $offering = $this->relationLoaded('curriculumGradeLevel')
-            ? $this->getRelation('curriculumGradeLevel')
-            : $this->curriculumGradeLevel()->first();
-
-        return $offering?->cluster_ID;
+        return $this->attributes['cluster_ID'] ?? null;
     }
 
     public function isSeniorHigh(): bool
@@ -447,7 +398,7 @@ class Enrollment extends Model
 
     public function setGradeLevelAttribute(string $value): void
     {
-        // Grade level is defined by curriculum_grade_level_ID.
+        $this->attributes['grade_ID'] = GradeLevel::idForValue($value);
     }
 
     public function studentSubjects(): HasMany

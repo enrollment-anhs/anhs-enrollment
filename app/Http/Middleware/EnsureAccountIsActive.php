@@ -14,6 +14,19 @@ class EnsureAccountIsActive
     {
         $user = $request->user();
 
+        if ($user && method_exists($user, 'roleName') && $user->roleName() === 'registrar') {
+            Auth::logout();
+
+            if ($request->hasSession()) {
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+            }
+
+            return redirect()->route('login')->withErrors([
+                Fortify::username() => 'This account role is no longer available.',
+            ]);
+        }
+
         if ($user && method_exists($user, 'isAccountActive') && ! $user->isAccountActive()) {
             Auth::logout();
 

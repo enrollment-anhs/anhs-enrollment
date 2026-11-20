@@ -27,7 +27,7 @@ class AdminUserController extends Controller
         }
 
         $activeTab = $request->string('tab')->toString() === 'students' ? 'students' : 'staff';
-        $staffRoles = Role::query()->orderBy('role_name')->get();
+        $staffRoles = Role::query()->where('role_name', '!=', 'registrar')->orderBy('role_name')->get();
         $roleCounts = $staffRoles
             ->mapWithKeys(fn (Role $role) => [
                 $role->role_name => Staff::query()->where('role_id', $role->id)->count(),
@@ -45,7 +45,7 @@ class AdminUserController extends Controller
                 ->whereNotNull('username')
                 ->where('username', '!=', '');
         } else {
-            $query = Staff::query()->with('role');
+            $query = Staff::query()->with('role')->whereHas('role', fn ($q) => $q->where('role_name', '!=', 'registrar'));
 
             if ($request->filled('role')) {
                 $query->whereHas('role', fn ($q) => $q->where('role_name', $request->string('role')->toString()));
@@ -84,8 +84,8 @@ class AdminUserController extends Controller
             'staffRoles' => $staffRoles,
             'specializations' => Specialization::query()->orderBy('name')->get(),
             'roleCounts' => $roleCounts,
-            'totalUsers' => Staff::query()->count() + Student::query()->whereNotNull('username')->count(),
-            'staffCount' => Staff::query()->count(),
+            'totalUsers' => Staff::query()->whereHas('role', fn ($q) => $q->where('role_name', '!=', 'registrar'))->count() + Student::query()->whereNotNull('username')->count(),
+            'staffCount' => Staff::query()->whereHas('role', fn ($q) => $q->where('role_name', '!=', 'registrar'))->count(),
             'studentCount' => Student::query()->whereNotNull('username')->count(),
             'perPage' => $perPage,
             'suffixOptions' => StudentApplication::suffixOptions(),

@@ -46,7 +46,6 @@
                 <a @click="mobileMenuOpen = false" href="#about-us" class="rounded px-3 py-2 text-sm font-medium uppercase tracking-wide text-[#0C2C55] transition hover:bg-gray-100 hover:text-[#0C2C55]/80 lg:px-0 lg:py-1 lg:hover:bg-transparent xl:text-base">About</a>
                 <a @click="mobileMenuOpen = false" href="#faq" class="rounded px-3 py-2 text-sm font-medium uppercase tracking-wide text-[#0C2C55] transition hover:bg-gray-100 hover:text-[#0C2C55]/80 lg:px-0 lg:py-1 lg:hover:bg-transparent xl:text-base">FAQ</a>
                 <a @click="mobileMenuOpen = false" href="#contact-us" class="rounded px-3 py-2 text-sm font-medium uppercase tracking-wide text-[#0C2C55] transition hover:bg-gray-100 hover:text-[#0C2C55]/80 lg:px-0 lg:py-1 lg:hover:bg-transparent xl:text-base">Contact Us</a>
-                <a @click="mobileMenuOpen = false" href="{{ route('login') }}" class="mt-2 inline-flex justify-center rounded-full bg-[#0C2C55] px-5 py-2 text-sm font-semibold uppercase tracking-wide text-white transition hover:bg-[#143d73] lg:mt-0">Login</a>
             </nav>
         </div>
     </header>
@@ -97,9 +96,6 @@
             </div>
             @endif
 
-            @if (session('application_status_enrollment_year'))
-            @include('partials.first-time-sign-in', ['enrollmentYear' => session('application_status_enrollment_year')])
-            @endif
 
             @if ($errors->statusCheck->has('status_lookup') || $errors->statusCheck->has('status_lrn') || $errors->statusCheck->has('status_birthdate'))
             <div class="mb-4 p-3 rounded bg-red-50 border-l-4 border-red-500 text-red-700 text-sm">
@@ -180,7 +176,7 @@
                         <p class="text-gray-700 leading-relaxed">
                             Click <strong>Enroll Now</strong> and complete the registration form with your LRN, personal and contact details,
                             address, parent or guardian information, and enrollment details. Submit the form once all required fields are complete.
-                            The system will create your student account and mark your enrollment as temporarily enrolled.
+                            The system will record your application and mark your enrollment as temporarily enrolled.
                         </p>
                     </div>
                 </div>
@@ -195,9 +191,8 @@
                     </button>
                     <div class="faq-answer px-6 pb-4" x-show="open === 2" x-transition>
                         <p class="text-gray-700 leading-relaxed">
-                            After you sign in, open the Documents section of your student portal and upload the requirements shown there.
                             A Birth Certificate and Form 137/SF9 are required. A Good Moral Certificate and recent 2x2 photo may also be
-                            submitted when applicable. Guidance will review and verify your uploaded documents.
+                            submitted when applicable. Submit these to the school office, where Guidance will review and verify them.
                         </p>
                     </div>
                 </div>
@@ -212,9 +207,9 @@
                     </button>
                     <div class="faq-answer px-6 pb-4" x-show="open === 3" x-transition>
                         <p class="text-gray-700 leading-relaxed">
-                            Select <strong>Check Enrollment Status</strong> on the home page or login page. Enter the same 12-digit LRN and
+                            Select <strong>Check Enrollment Status</strong> on the home page. Enter the same 12-digit LRN and
                             birthdate you used during registration. The system will show whether your enrollment is pending, temporarily enrolled,
-                            or enrolled, along with sign-in instructions when your account is ready.
+                            or enrolled.
                         </p>
                     </div>
                 </div>
@@ -222,16 +217,15 @@
                 <!-- FAQ Item 4 -->
                 <div class="bg-white rounded-lg shadow-md overflow-hidden">
                     <button class="faq-question w-full px-6 py-4 text-left flex justify-between items-center hover:bg-gray-50 transition duration-200" @click="open = open === 4 ? 0 : 4">
-                        <span class="font-semibold text-[#0C2C55]">How do I sign in for the first time?</span>
+                        <span class="font-semibold text-[#0C2C55]">How will I know my enrollment status?</span>
                         <svg class="faq-icon w-5 h-5 text-[#0C2C55] transform transition-transform duration-300" :class="{ 'rotate-180': open === 4 }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                         </svg>
                     </button>
                     <div class="faq-answer px-6 pb-4" x-show="open === 4" x-transition>
                         <p class="text-gray-700 leading-relaxed">
-                            Check your enrollment status using your LRN and birthdate. When sign-in instructions are available, use your LRN as
-                            your username. Your temporary password follows the format shown by the status checker. Change that password immediately
-                            after your first sign-in.
+                            Check your enrollment status using your LRN and birthdate. For questions or additional requirements, coordinate with
+                            the school office.
                         </p>
                     </div>
                 </div>
@@ -239,7 +233,7 @@
                 <!-- FAQ Item 5 -->
                 <div class="bg-white rounded-lg shadow-md overflow-hidden">
                     <button class="faq-question w-full px-6 py-4 text-left flex justify-between items-center hover:bg-gray-50 transition duration-200" @click="open = open === 5 ? 0 : 5">
-                        <span class="font-semibold text-[#0C2C55]">What happens after I upload my documents?</span>
+                        <span class="font-semibold text-[#0C2C55]">What happens after I submit my documents?</span>
                         <svg class="faq-icon w-5 h-5 text-[#0C2C55] transform transition-transform duration-300" :class="{ 'rotate-180': open === 5 }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                         </svg>
@@ -247,8 +241,8 @@
                     <div class="faq-answer px-6 pb-4" x-show="open === 5" x-transition>
                         <p class="text-gray-700 leading-relaxed">
                             Your enrollment remains temporarily enrolled while the required documents are being reviewed. Once Guidance verifies
-                            that the required documents are complete, the system updates your status to enrolled. You can continue to check the
-                            status checker or your student portal for updates.
+                            that the required documents are complete, the system updates your status to enrolled. Continue using the status checker
+                            for updates.
                         </p>
                     </div>
                 </div>
@@ -256,16 +250,14 @@
                 <!-- FAQ Item 6 -->
                 <div class="bg-white rounded-lg shadow-md overflow-hidden">
                     <button class="faq-question w-full px-6 py-4 text-left flex justify-between items-center hover:bg-gray-50 transition duration-200" @click="open = open === 6 ? 0 : 6">
-                        <span class="font-semibold text-[#0C2C55]">What if I forget my password or need help?</span>
+                        <span class="font-semibold text-[#0C2C55]">What if I need help?</span>
                         <svg class="faq-icon w-5 h-5 text-[#0C2C55] transform transition-transform duration-300" :class="{ 'rotate-180': open === 6 }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                         </svg>
                     </button>
                     <div class="faq-answer px-6 pb-4" x-show="open === 6" x-transition>
                         <p class="text-gray-700 leading-relaxed">
-                            On the login page, select <strong>Forgot Password</strong>, enter the email registered to your account, request the
-                            one-time password, and enter the six-digit code to reset your password. For enrollment or document concerns,
-                            contact or visit the Guidance Office.
+                            For enrollment or document concerns, contact or visit the Guidance Office.
                         </p>
                     </div>
                 </div>

@@ -4,7 +4,7 @@
     $managementRoutePrefix = request()->routeIs('principal.*') ? 'principal.' : 'admin.';
 @endphp
 
-@section('title', 'Tracks, Clusters & Subjects')
+@section('title', 'Tracks, Clusters & Grade Levels')
 
 @push('toasts')
     <x-password-reset-toasts :include-errors="false" test-prefix="subject-config" />
@@ -17,24 +17,22 @@
     $trackModalOpen = old('_form') === 'track' && $errors->any();
     $clusterModalOpen = old('_form') === 'cluster' && $errors->any();
     $requestedTab = request('tab', 'tracks');
-    $activeTab = $subjectModalOpen ? 'subjects'
+    $activeTab = $subjectModalOpen ? 'grade-levels'
         : ($trackModalOpen ? 'tracks'
         : ($clusterModalOpen ? 'clusters'
-        : (in_array($requestedTab, ['tracks', 'clusters', 'subjects'], true) ? $requestedTab : 'tracks')));
+        : (in_array($requestedTab, ['tracks', 'clusters', 'grade-levels'], true) ? $requestedTab : 'tracks')));
 @endphp
 
 <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
     <div>
-        <h1 class="text-2xl font-bold tracking-tight text-gray-800">Tracks, Clusters &amp; Subjects</h1>
-        <p class="mt-1 text-sm text-gray-500">View the Senior High structure and manage the subject masterfile.</p>
+        <h1 class="text-2xl font-bold tracking-tight text-gray-800">Tracks, Clusters &amp; Grade Levels</h1>
+        <p class="mt-1 text-sm text-gray-500">Manage the enrollment structure for grade levels, tracks, and clusters.</p>
     </div>
     <div>
         <button type="button" id="addTrackHeaderBtn" onclick="openTrackModal()"
             class="{{ $activeTab === 'tracks' ? 'inline-flex' : 'hidden' }} items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90" style="background-color: #296374;">Add Track</button>
         <button type="button" id="addClusterHeaderBtn" onclick="openClusterModal()"
             class="{{ $activeTab === 'clusters' ? 'inline-flex' : 'hidden' }} items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90" style="background-color: #296374;">Add Cluster</button>
-        <button type="button" id="addSubjectHeaderBtn" onclick="openSubjectModal()"
-            class="{{ $activeTab === 'subjects' ? 'inline-flex' : 'hidden' }} items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90" style="background-color: #296374;">Add Subject</button>
     </div>
 </div>
 
@@ -87,7 +85,7 @@
 
 <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
     <div class="border-b border-gray-100 px-3 pt-1">
-        <nav class="flex gap-1" role="tablist" aria-label="Tracks, clusters, and subjects tabs">
+        <nav class="flex gap-1" role="tablist" aria-label="Tracks, clusters, and grade levels tabs">
             <button type="button" id="tracksTabBtn" onclick="switchSubjectConfigTab('tracks')" role="tab"
                 aria-selected="{{ $activeTab === 'tracks' ? 'true' : 'false' }}"
                 class="relative px-4 py-3 text-sm font-semibold transition {{ $activeTab === 'tracks' ? 'text-[#296374]' : 'text-gray-500 hover:text-gray-700' }}">
@@ -100,11 +98,11 @@
                 Clusters
                 <span id="clustersTabIndicator" class="absolute inset-x-4 -bottom-px h-0.5 rounded-full bg-[#296374] {{ $activeTab === 'clusters' ? '' : 'hidden' }}"></span>
             </button>
-            <button type="button" id="subjectsTabBtn" onclick="switchSubjectConfigTab('subjects')" role="tab"
-                aria-selected="{{ $activeTab === 'subjects' ? 'true' : 'false' }}"
-                class="relative px-4 py-3 text-sm font-semibold transition {{ $activeTab === 'subjects' ? 'text-[#296374]' : 'text-gray-500 hover:text-gray-700' }}">
-                Subjects
-                <span id="subjectsTabIndicator" class="absolute inset-x-4 -bottom-px h-0.5 rounded-full bg-[#296374] {{ $activeTab === 'subjects' ? '' : 'hidden' }}"></span>
+            <button type="button" id="grade-levelsTabBtn" onclick="switchSubjectConfigTab('grade-levels')" role="tab"
+                aria-selected="{{ $activeTab === 'grade-levels' ? 'true' : 'false' }}"
+                class="relative px-4 py-3 text-sm font-semibold transition {{ $activeTab === 'grade-levels' ? 'text-[#296374]' : 'text-gray-500 hover:text-gray-700' }}">
+                Grade Levels
+                <span id="grade-levelsTabIndicator" class="absolute inset-x-4 -bottom-px h-0.5 rounded-full bg-[#296374] {{ $activeTab === 'grade-levels' ? '' : 'hidden' }}"></span>
             </button>
         </nav>
     </div>
@@ -178,7 +176,19 @@
         </div>
     </div>
 
-    <div id="subjectsTabPanel" class="{{ $activeTab === 'subjects' ? '' : 'hidden' }}">
+    <div id="grade-levelsTabPanel" class="{{ $activeTab === 'grade-levels' ? '' : 'hidden' }} p-5">
+        <div class="mb-5 rounded-lg border border-gray-200 bg-slate-50 p-4">
+            <form method="POST" action="{{ route($managementRoutePrefix.'subject-config.grade-levels.store') }}" class="grid gap-3 sm:grid-cols-[1fr_220px_auto] sm:items-end">
+                @csrf
+                <div><label class="mb-1 block text-xs font-bold uppercase tracking-wide text-gray-600">Grade level</label><input name="grade_label" placeholder="e.g. Grade 7" required class="{{ $fieldClass }} border-gray-200"></div>
+                <div><label class="mb-1 block text-xs font-bold uppercase tracking-wide text-gray-600">School level</label><select name="category" required class="{{ $fieldClass }} border-gray-200"><option value="Junior High School">Junior High School</option><option value="Senior High School">Senior High School</option></select></div>
+                <button class="h-10 rounded-lg bg-[#296374] px-4 text-sm font-bold text-white">Add Grade Level</button>
+            </form>
+        </div>
+        <div class="overflow-x-auto rounded-lg border border-gray-200"><table class="w-full min-w-[560px] text-left text-sm"><thead class="bg-gray-50 text-xs font-bold uppercase tracking-wide text-gray-500"><tr><th class="px-4 py-3">Grade Level</th><th class="px-4 py-3">School Level</th><th class="px-4 py-3 text-right">Save</th></tr></thead><tbody class="divide-y divide-gray-100">@forelse($gradeLevels as $gradeLevel)<tr><form method="POST" action="{{ route($managementRoutePrefix.'subject-config.grade-levels.update', $gradeLevel) }}">@csrf @method('PUT')<td class="px-4 py-2"><input name="grade_label" value="{{ $gradeLevel->grade_label }}" required class="{{ $fieldClass }} border-gray-200"></td><td class="px-4 py-2"><select name="category" class="{{ $fieldClass }} border-gray-200"><option value="Junior High School" @selected($gradeLevel->category === 'Junior High School')>Junior High School</option><option value="Senior High School" @selected($gradeLevel->category === 'Senior High School')>Senior High School</option></select></td><td class="px-4 py-2 text-right"><button class="rounded-lg border border-[#296374]/30 px-3 py-2 text-xs font-bold text-[#296374]">Save</button></td></form></tr>@empty<tr><td colspan="3" class="px-4 py-10 text-center text-gray-500">No grade levels configured.</td></tr>@endforelse</tbody></table></div>
+    </div>
+
+    <div id="subjectsTabPanel" class="hidden">
         <div class="border-b border-gray-100 px-4 py-4">
             <form method="GET" action="{{ route($managementRoutePrefix.'subject-config.index') }}" class="flex flex-wrap items-center gap-2">
                 <input type="hidden" name="tab" value="subjects">
@@ -686,10 +696,9 @@
     }
 
     function switchSubjectConfigTab(tab) {
-        const tabs = ['tracks', 'clusters', 'subjects'];
+        const tabs = ['tracks', 'clusters', 'grade-levels'];
         const addTrackBtn = document.getElementById('addTrackHeaderBtn');
         const addClusterBtn = document.getElementById('addClusterHeaderBtn');
-        const addSubjectBtn = document.getElementById('addSubjectHeaderBtn');
 
         tabs.forEach((tabName) => {
             const isActive = tabName === tab;
@@ -705,7 +714,7 @@
             indicator.classList.toggle('hidden', !isActive);
         });
 
-        [[addTrackBtn, 'tracks'], [addClusterBtn, 'clusters'], [addSubjectBtn, 'subjects']].forEach(([button, tabName]) => {
+        [[addTrackBtn, 'tracks'], [addClusterBtn, 'clusters']].forEach(([button, tabName]) => {
             const show = tab === tabName;
             button.classList.toggle('hidden', !show);
             button.classList.toggle('inline-flex', show);

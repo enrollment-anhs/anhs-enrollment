@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # anhs-sis
 
 ## Queued class imports
@@ -33,3 +34,6 @@ For hosting that does not use this Docker image, configure the web PHP runtime
 with `upload_max_filesize = 15M` and `post_max_size = 64M`, and set the web server
 or proxy request limit to at least 64 MB. Reload the relevant services after
 changing their configuration.
+=======
+# anhs-enrollment
+>>>>>>> 63804a0caa30ab991c18d7c4dc17c3f4e07f42ae

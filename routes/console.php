@@ -52,13 +52,6 @@ Artisan::command('database:reset-once', function () {
     return 0;
 })->purpose('Run a full database reset and default seed once per token');
 
-Artisan::command('registrar:grade-digest', function () {
-    $count = \App\Support\RegistrarGradeDigest::sendWhenDue();
-    $this->info("{$count} new subject submission(s) included in the registrar digest.");
-})->purpose('Send grouped grade submission notifications when the two-hour interval is due');
-
-Schedule::command('registrar:grade-digest')->everyMinute()->withoutOverlapping();
-
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');

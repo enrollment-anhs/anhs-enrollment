@@ -1,13 +1,15 @@
 @php
     $notifications = [];
-    foreach (['toast_success', 'success'] as $key) {
+    foreach (['toast_success', 'success', 'status'] as $key) {
         if (session($key)) {
             $notifications[] = ['type' => 'success', 'message' => session($key)];
         }
     }
     $errorMessages = $errors->all();
-    if (session('error')) {
-        $errorMessages[] = session('error');
+    foreach (['toast_error', 'error'] as $key) {
+        if (session($key)) {
+            $errorMessages[] = session($key);
+        }
     }
     foreach (array_unique($errorMessages) as $message) {
         $notifications[] = ['type' => 'error', 'message' => $message];

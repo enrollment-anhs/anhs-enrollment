@@ -3,6 +3,8 @@
 @section('title', 'Section Details')
 
 @section('content')
+@include('users.guidance.enrollments.partials.result-toasts')
+
 @php
     $enrollments = ($section->enrollments ?? collect())
         ->sortBy(function ($enrollment) {
@@ -39,7 +41,6 @@
     $metaParts = array_filter([
         $gradeLabel,
         $isSeniorHigh && $section->cluster?->name ? $section->cluster->name : null,
-        $section->room ? 'Room '.$section->room : null,
         'Adviser: '.$adviserName,
         $cap > 0 ? "{$activeEnrollmentCount}/{$cap} students" : "{$activeEnrollmentCount} students",
     ]);
@@ -101,26 +102,6 @@
         </a>
     </div>
 </div>
-
-@if (session('status'))
-    <div class="mb-5 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
-        {{ session('status') }}
-    </div>
-@endif
-
-@if (session('success'))
-    <div class="mb-5 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
-        {{ session('success') }}
-    </div>
-@endif
-
-@if ($errors->any())
-    <div class="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
-        @foreach ($errors->all() as $error)
-            <p>{{ $error }}</p>
-        @endforeach
-    </div>
-@endif
 
 <form method="POST" action="{{ route('guidance.sections.transfer', $section) }}" id="transferStudentsForm" class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
     @csrf
@@ -361,7 +342,7 @@
     <div class="mx-4 w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl">
         <div class="border-b border-gray-200 bg-gradient-to-r from-[#296374]/10 to-transparent p-6">
             <h3 class="text-xl font-bold text-gray-800">Section details</h3>
-            <p class="mt-1 text-sm text-gray-500">Update room, capacity, adviser{{ $isSeniorHigh ? ', and cluster' : '' }}.</p>
+            <p class="mt-1 text-sm text-gray-500">Update capacity, adviser{{ $isSeniorHigh ? ', and cluster' : '' }}.</p>
         </div>
         <form id="sectionSettingsForm" class="space-y-4 p-6" action="{{ route('guidance.sections.update', $section) }}" method="POST">
             @csrf
@@ -379,15 +360,6 @@
                 </div>
             @endif
 
-            <div>
-                <label for="settings_room" class="mb-1 block text-sm font-semibold text-gray-700">Room</label>
-                <select id="settings_room" name="room" class="w-full rounded-lg border border-gray-300 px-4 py-2">
-                    <option value="">No room assigned</option>
-                    @foreach ($rooms as $room)
-                        <option value="{{ $room->name }}" @selected(old('room', $section->room) === $room->name)>{{ $room->name }}</option>
-                    @endforeach
-                </select>
-            </div>
 
             <div>
                 <label for="settings_capacity" class="mb-1 block text-sm font-semibold text-gray-700">Capacity</label>
@@ -607,7 +579,7 @@
             option.addEventListener('click', () => selectTransferSectionOption(option));
         });
 
-        @if ($errors->has('capacity') || $errors->has('room') || $errors->has('staff_ID') || $errors->has('cluster_ID'))
+        @if ($errors->has('capacity') || $errors->has('staff_ID') || $errors->has('cluster_ID'))
             openSectionSettingsModal();
         @endif
 

@@ -6,7 +6,6 @@ use App\Http\Requests\CheckApplicationStatusRequest;
 use App\Http\Requests\StoreStudentEnrollmentRequest;
 use App\Models\EnrollmentStatus;
 use App\Models\StudentApplication;
-use App\Support\StudentCredentials;
 use App\Support\StudentEnrollmentForm;
 use App\Support\StudentEnrollmentRegistrar;
 use Illuminate\Http\JsonResponse;
@@ -72,28 +71,14 @@ class ApplicationController extends Controller
         $enrollmentStatus = $enrollment?->enrollment_status;
 
         $message = match (true) {
-            $enrollmentStatus === EnrollmentStatus::TEMPORARILY_ENROLLED => 'You are temporarily enrolled. Sign in to upload your required documents, then change your password after your first sign in.',
-            $enrollmentStatus === EnrollmentStatus::ENROLLED => 'You are enrolled. Use the login details below and change your password after your first sign in.',
+            $enrollmentStatus === EnrollmentStatus::TEMPORARILY_ENROLLED => 'You are temporarily enrolled. Please coordinate with the school office for your remaining requirements.',
+            $enrollmentStatus === EnrollmentStatus::ENROLLED => 'You are enrolled. Please coordinate with the school office for any remaining concerns.',
             $status === 'pending' => 'Your application is pending. Please wait for verification.',
-            $status === 'approved' => 'Your application is approved. Use the login details below and change your password after your first sign in.',
+            $status === 'approved' => 'Your application is approved. Please coordinate with the school office for the next steps.',
             $status === 'rejected' => 'Your application was rejected. Please contact the school for guidance on re-application.',
             default => 'Your application status is currently under review.',
         };
 
-        $showLogin = in_array($enrollmentStatus, [
-            EnrollmentStatus::TEMPORARILY_ENROLLED,
-            EnrollmentStatus::ENROLLED,
-        ], true) || $status === 'approved';
-
-        if (! $showLogin) {
-            return back()->with('application_status_message', $message);
-        }
-
-        $enrollmentYear = StudentCredentials::enrollmentYear($enrollment);
-
-        return back()->with([
-            'application_status_message' => $message,
-            'application_status_enrollment_year' => $enrollmentYear,
-        ]);
+        return back()->with('application_status_message', $message);
     }
 }

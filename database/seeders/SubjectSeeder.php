@@ -193,24 +193,8 @@ class SubjectSeeder extends Seeder
     {
         $typeIds = SubjectType::query()->pluck('subject_type_ID', 'key');
 
-        foreach (['general', 'core', 'elective'] as $type) {
-            if (! isset($typeIds[$type])) {
-                throw new RuntimeException("Missing subject type: {$type}. Run SubjectTypeSeeder first.");
-            }
-        }
-
-        foreach ([7, 8, 9, 10] as $grade) {
-            foreach (self::JUNIOR_HIGH_AREAS as $prefix => $title) {
-                $this->seedSubject($prefix.$grade, $title.' '.$grade, 'Junior High School', $typeIds['general']);
-            }
-        }
-
-        foreach (self::SENIOR_HIGH_CORE_SUBJECTS as $code => $title) {
-            $this->seedSubject($code, $title, 'Senior High School', $typeIds['core']);
-        }
-
-        foreach (self::EFFECTIVE_COMMUNICATION_COMPONENTS as $code => $title) {
-            $this->seedSubject($code, $title, 'Senior High School', $typeIds['core']);
+        if (! isset($typeIds['elective'])) {
+            throw new RuntimeException('Missing subject type: elective. Run SubjectTypeSeeder first.');
         }
 
         $clusterIds = Cluster::query()->pluck('cluster_ID', 'name');
@@ -231,7 +215,6 @@ class SubjectSeeder extends Seeder
             }
         }
 
-        Subject::query()->whereIn('code', self::LEGACY_SENIOR_HIGH_CODES)->update(['status' => 'archived']);
     }
 
     private function seedSubject(string $code, string $title, string $schoolLevel, int $typeId, ?int $clusterId = null): void

@@ -46,7 +46,7 @@ class StoreAdminUserRequest extends FormRequest
             'email' => ['required', 'email', 'max:255', 'unique:staffs,email'],
             'password' => ['required', 'string', Password::defaults()],
             'password_confirmation' => ['required', 'string', 'same:password'],
-            'role' => ['required', Rule::exists('roles', 'role_name')],
+            'role' => ['required', Rule::in(['admin', 'principal', 'guidance counselor', 'teacher'])],
             'specialization_id' => ['exclude_unless:role,teacher', 'nullable', 'integer', Rule::exists('specializations', 'id')],
         ];
     }

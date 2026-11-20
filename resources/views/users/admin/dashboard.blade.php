@@ -179,7 +179,6 @@
                                 @if($user->role?->role_name === 'admin') bg-purple-50 text-purple-700 ring-purple-200
                                 @elseif($user->role?->role_name === 'teacher') bg-blue-50 text-blue-700 ring-blue-200
                                 @elseif($user->role?->role_name === 'guidance counselor') bg-emerald-50 text-emerald-700 ring-emerald-200
-                                @elseif($user->role?->role_name === 'registrar') bg-amber-50 text-amber-700 ring-amber-200
                                 @elseif($user->role?->role_name === 'principal') bg-rose-50 text-rose-700 ring-rose-200
                                 @else bg-gray-100 text-gray-700 ring-gray-200
                                 @endif">

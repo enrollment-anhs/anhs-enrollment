@@ -4,7 +4,7 @@
             <h2 id="open-grading-periods-title" class="text-lg font-bold text-gray-900">Open Grading Periods</h2>
             <p class="mt-1 text-sm text-gray-500">Currently open for grade entry</p>
         </div>
-        <a href="{{ route('principal.grading-term-config.index') }}" class="text-sm font-semibold text-[#296374] hover:underline">Manage grading terms</a>
+        <a href="{{ route('principal.senior-high-semester-config.index') }}" class="text-sm font-semibold text-[#296374] hover:underline">Manage Senior High semesters</a>
     </div>
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         @foreach ($openGradingPeriods as $level => $period)

@@ -12,7 +12,6 @@ $roleCardStyles = [
 'admin' => ['text' => 'text-purple-700', 'hover' => 'hover:border-purple-200'],
 'teacher' => ['text' => 'text-blue-700', 'hover' => 'hover:border-blue-200'],
 'guidance counselor' => ['text' => 'text-emerald-700', 'hover' => 'hover:border-emerald-200'],
-'registrar' => ['text' => 'text-amber-700', 'hover' => 'hover:border-amber-200'],
 'principal' => ['text' => 'text-rose-700', 'hover' => 'hover:border-rose-200'],
 'student' => ['text' => 'text-cyan-700', 'hover' => 'hover:border-cyan-200'],
 ];
@@ -156,7 +155,6 @@ $roleCardStyles = [
                                     @if($roleName === 'admin') bg-purple-50 text-purple-700 ring-purple-200
                                     @elseif($roleName === 'teacher') bg-blue-50 text-blue-700 ring-blue-200
                                     @elseif($roleName === 'guidance counselor') bg-emerald-50 text-emerald-700 ring-emerald-200
-                                    @elseif($roleName === 'registrar') bg-amber-50 text-amber-700 ring-amber-200
                                     @elseif($roleName === 'principal') bg-rose-50 text-rose-700 ring-rose-200
                                     @else bg-gray-100 text-gray-700 ring-gray-200
                                     @endif">

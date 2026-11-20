@@ -4,7 +4,6 @@ use App\Http\Controllers\Admin\AcademicSetupController;
 use App\Http\Controllers\Admin\AcademicYearConfigurationController;
 use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Admin\AttendanceConfigurationController;
-use App\Http\Controllers\Admin\CurriculumConfigurationController;
 use App\Http\Controllers\Admin\DocumentReturnReasonConfigurationController;
 use App\Http\Controllers\Admin\GradingTermConfigurationController;
 use App\Http\Controllers\Admin\MovementReasonConfigurationController;
@@ -49,6 +48,8 @@ Route::put('/attendance-configuration', [AttendanceConfigurationController::clas
     ->name('attendance-config.update');
 Route::get('/grading-term-configuration', [AcademicSetupController::class, 'index'])
     ->name('grading-term-config.index');
+Route::get('/senior-high-semester-configuration', [AcademicSetupController::class, 'index'])
+    ->name('senior-high-semester-config.index');
 Route::post('/grading-term-configuration', [GradingTermConfigurationController::class, 'store'])
     ->name('grading-term-config.store');
 Route::put('/grading-term-configuration/settings', [GradingTermConfigurationController::class, 'updateSettings'])
@@ -106,32 +107,6 @@ Route::put('/document-return-reason-configuration/{documentReturnReason}', [Docu
     ->name('document-return-reason-config.update');
 Route::delete('/document-return-reason-configuration/{documentReturnReason}', [DocumentReturnReasonConfigurationController::class, 'destroy'])
     ->name('document-return-reason-config.delete');
-Route::get('/curriculum-configuration', [CurriculumConfigurationController::class, 'index'])
-    ->name('curriculum-config.index');
-Route::post('/curriculum-configuration/curricula', [CurriculumConfigurationController::class, 'storeMasterCurriculum'])
-    ->name('curriculum-config.curricula.store');
-Route::put('/curriculum-configuration/curricula/{curricula}', [CurriculumConfigurationController::class, 'updateMasterCurriculum'])
-    ->name('curriculum-config.curricula.update');
-Route::patch('/curriculum-configuration/curricula/{curricula}/toggle-status', [CurriculumConfigurationController::class, 'toggleMasterCurriculumStatus'])
-    ->name('curriculum-config.curricula.toggle-status');
-Route::get('/curriculum-configuration/curricula/{curricula}/report', [CurriculumConfigurationController::class, 'curriculumReport'])
-    ->name('curriculum-config.curricula.report');
-Route::post('/curriculum-configuration', [CurriculumConfigurationController::class, 'storeCurriculum'])
-    ->name('curriculum-config.store');
-Route::put('/curriculum-configuration/{curriculum}', [CurriculumConfigurationController::class, 'updateCurriculum'])
-    ->name('curriculum-config.update');
-Route::patch('/curriculum-configuration/{curriculum}/toggle-status', [CurriculumConfigurationController::class, 'toggleCurriculumStatus'])
-    ->name('curriculum-config.toggle-status');
-Route::post('/curriculum-configuration/subjects', [CurriculumConfigurationController::class, 'storeCurriculumSubject'])
-    ->name('curriculum-config.subjects.store');
-Route::get('/curriculum-configuration/{curriculum}/mapeh', [\App\Http\Controllers\Admin\MapehConfigurationController::class, 'edit'])
-    ->name('curriculum-config.mapeh.edit');
-Route::post('/curriculum-configuration/{curriculum}/mapeh', [\App\Http\Controllers\Admin\MapehConfigurationController::class, 'store'])
-    ->name('curriculum-config.mapeh.store');
-Route::put('/curriculum-configuration/subjects/{curriculumSubject}', [CurriculumConfigurationController::class, 'updateCurriculumSubject'])
-    ->name('curriculum-config.subjects.update');
-Route::delete('/curriculum-configuration/subjects/{curriculumSubject}', [CurriculumConfigurationController::class, 'destroyCurriculumSubject'])
-    ->name('curriculum-config.subjects.delete');
 Route::get('/subject-configuration', [SubjectConfigurationController::class, 'index'])
     ->name('subject-config.index');
 Route::post('/subject-configuration/tracks', [SubjectConfigurationController::class, 'storeTrack'])
@@ -142,6 +117,10 @@ Route::post('/subject-configuration/clusters', [SubjectConfigurationController::
     ->name('subject-config.clusters.store');
 Route::put('/subject-configuration/clusters/{cluster}', [SubjectConfigurationController::class, 'updateCluster'])
     ->name('subject-config.clusters.update');
+Route::post('/subject-configuration/grade-levels', [SubjectConfigurationController::class, 'storeGradeLevel'])
+    ->name('subject-config.grade-levels.store');
+Route::put('/subject-configuration/grade-levels/{gradeLevel}', [SubjectConfigurationController::class, 'updateGradeLevel'])
+    ->name('subject-config.grade-levels.update');
 Route::post('/subject-configuration', [SubjectConfigurationController::class, 'store'])
     ->name('subject-config.store');
 Route::put('/subject-configuration/{subject}', [SubjectConfigurationController::class, 'update'])

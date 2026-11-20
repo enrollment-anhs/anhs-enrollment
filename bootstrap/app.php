@@ -5,7 +5,6 @@ use App\Http\Middleware\EnsureAdmin;
 use App\Http\Middleware\EnsureGuidanceCounselor;
 use App\Http\Middleware\EnsureLoginCaptcha;
 use App\Http\Middleware\EnsurePrincipal;
-use App\Http\Middleware\EnsureRegistrar;
 use App\Http\Middleware\EnsureSectionIsActive;
 use App\Http\Middleware\EnsureStudent;
 use App\Http\Middleware\EnsureTeacher;
@@ -37,7 +36,6 @@ return Application::configure(basePath: dirname(__DIR__))
             'guidance' => EnsureGuidanceCounselor::class,
             'login_captcha' => EnsureLoginCaptcha::class,
             'principal' => EnsurePrincipal::class,
-            'registrar' => EnsureRegistrar::class,
             'student' => EnsureStudent::class,
             'teacher' => EnsureTeacher::class,
             'force_password' => ForcePasswordChange::class,

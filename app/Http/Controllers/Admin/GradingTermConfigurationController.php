@@ -23,6 +23,20 @@ use Illuminate\Validation\ValidationException;
 
 class GradingTermConfigurationController extends Controller
 {
+    /** Data retained in Academic Setup now that grading-term configuration is retired. */
+    public function semesterPageData(): array
+    {
+        return [
+            'settings' => GradingTermSetting::current(),
+            'seniorHighSemesters' => GradingSemester::query()
+                ->with('status')
+                ->whereIn('key', [GradingSemester::FIRST, GradingSemester::SECOND])
+                ->orderBy('sort_order')
+                ->orderBy('semester_ID')
+                ->get(),
+        ];
+    }
+
     public function pageData(Request $request): array
     {
         $activeTab = $request->string('tab')->toString() === 'senior_high'
@@ -322,7 +336,6 @@ class GradingTermConfigurationController extends Controller
 
     public function updateSeniorHighSemester(Request $request): RedirectResponse
     {
-        $previous = GradingTerm::currentSeniorHighPeriod();
         $validated = $request->validate([
             'semester_ID' => ['required', 'integer', 'exists:grading_semesters,semester_ID'],
         ]);
@@ -334,12 +347,6 @@ class GradingTermConfigurationController extends Controller
 
         GradingTermSetting::current()->update(['semester_ID' => $semester->semester_ID]);
 
-        $current = GradingTerm::currentSeniorHighPeriod();
-        if (GradingTerm::seniorHighPeriodPosition($current['semester'], $current['term'])
-            > GradingTerm::seniorHighPeriodPosition($previous['semester'], $previous['term'])) {
-            GradingTermNotifier::opened($current['label'], true);
-        }
-
         return back()->with('success', "Active senior high semester set to {$semester->label}.");
     }
 
@@ -347,18 +354,9 @@ class GradingTermConfigurationController extends Controller
     {
         abort_unless(in_array($semester->key, [GradingSemester::FIRST, GradingSemester::SECOND], true), 404);
 
-        DB::transaction(function () use ($semester): void {
-            $semester->update(['grading_period_status_ID' => GradingPeriodStatus::closedId()]);
+        $semester->update(['grading_period_status_ID' => GradingPeriodStatus::closedId()]);
 
-            if ((int) GradingTermSetting::current()->semester_ID === (int) $semester->semester_ID) {
-                GradingTerm::query()->seniorHigh()
-                    ->whereIn('term_ID', array_values(array_filter(array_column(GradingTerm::seniorHighTerms(), 'term_ID'))))
-                    ->seniorHighAvailable()
-                    ->update(['senior_high_grading_period_status_ID' => GradingPeriodStatus::closedId()]);
-            }
-        });
-
-        return back()->with('success', "{$semester->label} is closed, and all of its Senior High terms are closed.");
+        return back()->with('success', "{$semester->label} is closed.");
     }
 
     public function updateSeniorHighSemesterStatus(Request $request, GradingSemester $semester): RedirectResponse
@@ -372,20 +370,10 @@ class GradingTermConfigurationController extends Controller
         DB::transaction(function () use ($validated, $semester): void {
             $settings = GradingTermSetting::current();
             if ($validated['status'] === GradingPeriodStatus::OPEN) {
-                $termIds = array_values(array_filter(array_column(GradingTerm::seniorHighTerms(), 'term_ID')));
-                if ($termIds === []) {
-                    throw ValidationException::withMessages(['status' => 'Add a Senior High term before opening a semester.']);
-                }
-                $currentTermId = in_array((int) $settings->term_ID, $termIds, true) ? (int) $settings->term_ID : $termIds[0];
                 GradingSemester::query()->where('semester_ID', '!=', $semester->semester_ID)
                     ->where('grading_period_status_ID', GradingPeriodStatus::openId())
                     ->update(['grading_period_status_ID' => GradingPeriodStatus::activeId()]);
-                GradingTerm::query()->seniorHigh()->whereIn('term_ID', $termIds)
-                    ->update(['senior_high_grading_period_status_ID' => GradingPeriodStatus::activeId()]);
-                GradingTerm::query()->seniorHigh()->whereNotIn('term_ID', $termIds)
-                    ->update(['senior_high_grading_period_status_ID' => GradingPeriodStatus::archivedId()]);
-                $this->openSeniorHighTerm($currentTermId);
-                $settings->update(['semester_ID' => $semester->semester_ID, 'term_ID' => $currentTermId]);
+                $settings->update(['semester_ID' => $semester->semester_ID]);
             }
             $semester->update(['grading_period_status_ID' => GradingPeriodStatus::idFor($validated['status'])]);
         });

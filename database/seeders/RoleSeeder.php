@@ -13,7 +13,6 @@ class RoleSeeder extends Seeder
             'admin',
             'teacher',
             'guidance counselor',
-            'registrar',
             'principal',
         ] as $roleName) {
             Role::query()->firstOrCreate(['role_name' => $roleName]);

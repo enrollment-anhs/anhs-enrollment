@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login | Agusan National High School Enrollment</title>
+    <title>Staff Login | Agusan National High School Enrollment</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <style>
@@ -24,8 +24,7 @@
     </style>
 </head>
 
-<body class="min-h-screen bg-gray-100"
-    x-data="{ showStatusModal: {{ session('application_status_message') || $errors->statusCheck->has('status_lookup') || $errors->statusCheck->has('status_lrn') || $errors->statusCheck->has('status_birthdate') ? 'true' : 'false' }}, mobileMenuOpen: false }">
+<body class="min-h-screen bg-gray-100" x-data="{ mobileMenuOpen: false }">
 
     <header class="fixed top-0 left-0 right-0 w-full bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-200 z-50">
         <div class="container mx-auto flex min-h-20 items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
@@ -44,7 +43,6 @@
                 <a @click="mobileMenuOpen = false" href="{{ route('home') }}#about-us" class="rounded px-3 py-2 text-sm font-medium uppercase tracking-wide text-[#0C2C55] transition hover:bg-gray-100 hover:text-[#0C2C55]/80 sm:px-0 sm:py-1 sm:hover:bg-transparent sm:text-base">About</a>
                 <a @click="mobileMenuOpen = false" href="{{ route('home') }}#faq" class="rounded px-3 py-2 text-sm font-medium uppercase tracking-wide text-[#0C2C55] transition hover:bg-gray-100 hover:text-[#0C2C55]/80 sm:px-0 sm:py-1 sm:hover:bg-transparent sm:text-base">FAQ</a>
                 <a @click="mobileMenuOpen = false" href="{{ route('home') }}#contact-us" class="rounded px-3 py-2 text-sm font-medium uppercase tracking-wide text-[#0C2C55] transition hover:bg-gray-100 hover:text-[#0C2C55]/80 sm:px-0 sm:py-1 sm:hover:bg-transparent sm:text-base">Contact Us</a>
-                <a @click="mobileMenuOpen = false" href="{{ route('login') }}" class="mt-2 inline-flex justify-center rounded-full bg-[#0C2C55] px-5 py-2 text-sm font-semibold uppercase tracking-wide text-white transition hover:bg-[#143d73] sm:mt-0">Login</a>
             </nav>
         </div>
     </header>
@@ -55,12 +53,12 @@
         <div class="relative container mx-auto flex min-h-[calc(100dvh-5rem)] items-center justify-center px-4 py-10 sm:px-6">
             <div class="grid w-full max-w-6xl gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-10">
                 <div class="text-white">
-                    <p class="mb-4 text-xs font-semibold uppercase tracking-[0.25em] text-white/80 sm:text-sm sm:tracking-[0.35em]">Student Portal</p>
+                    <p class="mb-4 text-xs font-semibold uppercase tracking-[0.25em] text-white/80 sm:text-sm sm:tracking-[0.35em]">Staff Portal</p>
                     <h1 class="mb-6 text-3xl font-bold leading-tight sm:text-5xl">
-                        Sign in to access your student portal
+                        Sign in to access the staff portal
                     </h1>
                     <p class="max-w-xl text-base leading-relaxed text-white/85 sm:text-lg">
-                        Continue to your dashboard, track your enrollment journey, and manage your school records securely.
+                        Manage enrollment records, document processing, and school operations securely.
                     </p>
                 </div>
 
@@ -92,7 +90,7 @@
                         <form action="{{ route('login.store') }}" method="POST">
                             @csrf
 
-                            <h1 class="text-3xl font-bold text-blue-800 tracking-tight mb-6">LOGIN</h1>
+                            <h1 class="text-3xl font-bold text-blue-800 tracking-tight mb-6">STAFF LOGIN</h1>
 
                             <div class="mb-6">
                                 <label class="block text-gray-700 text-sm font-bold mb-2" for="username">
@@ -173,75 +171,13 @@
                                 type="submit">
                                 Sign In
                             </button>
-                            <div class="mt-6 text-center">
-                                <p class="text-s text-gray-400">
-                                    Don't have an account?
-                                    <a href="{{ route('register') }}" class="text-[#76A08D] font-bold hover:underline">
-                                        Enroll Now
-                                    </a>
-                                </p>
-                            </div>
                         </form>
                     </div>
                 </div>
             </div>
         </div>
 
-        <button type="button"
-            @click="showStatusModal = true"
-            class="fixed bottom-4 left-4 right-4 z-50 rounded-full bg-[#D4AF37] px-5 py-3 font-semibold text-[#0C2C55] shadow-lg focus:outline-none focus:ring-4 focus:ring-[#D4AF37]/50 hover:bg-[#B8912E] sm:bottom-6 sm:left-6 sm:right-auto">
-            Check Enrollment Status
-        </button>
     </main>
-
-    <div x-show="showStatusModal"
-        x-transition
-        class="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4"
-        @click.self="showStatusModal = false"
-        x-cloak>
-        <div class="max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-lg bg-white p-5 shadow-xl sm:p-6">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-xl font-bold text-[#0C2C55]">Enrollment Status</h3>
-                <button type="button" @click="showStatusModal = false" class="text-gray-500 hover:text-gray-700 text-xl leading-none">&times;</button>
-            </div>
-
-            @if (session('application_status_message'))
-            <div class="mb-4 p-3 rounded bg-blue-50 border-l-4 border-blue-500 text-blue-700 text-sm">
-                {{ session('application_status_message') }}
-            </div>
-            @endif
-
-            @if (session('application_status_enrollment_year'))
-            @include('partials.first-time-sign-in', ['enrollmentYear' => session('application_status_enrollment_year')])
-            @endif
-
-            @if ($errors->statusCheck->has('status_lookup') || $errors->statusCheck->has('status_lrn') || $errors->statusCheck->has('status_birthdate'))
-            <div class="mb-4 p-3 rounded bg-red-50 border-l-4 border-red-500 text-red-700 text-sm">
-                {{ $errors->statusCheck->first('status_lookup') ?: $errors->statusCheck->first('status_lrn') ?: $errors->statusCheck->first('status_birthdate') }}
-            </div>
-            @endif
-
-            <form action="{{ route('applications.status') }}" method="POST" class="space-y-4">
-                @csrf
-                <div>
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="status_lrn">LRN</label>
-                    <input id="status_lrn" name="status_lrn" type="text" minlength="12" maxlength="12" inputmode="numeric" pattern="\d{12}" autocomplete="off" required
-                        value="{{ old('status_lrn') }}"
-                        class="shadow-sm appearance-none border rounded w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200">
-                </div>
-                <div>
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="status_birthdate">Birthdate</label>
-                    <input id="status_birthdate" name="status_birthdate" type="date" min="{{ \App\Models\StudentApplication::EARLIEST_BIRTHDATE }}" max="{{ \App\Models\StudentApplication::LATEST_BIRTHDATE }}" required
-                        value="{{ old('status_birthdate') }}"
-                        class="shadow-sm appearance-none border rounded w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200">
-                </div>
-                <button type="submit"
-                    class="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 px-4 rounded focus:outline-none focus:ring-4 focus:ring-blue-300 transition duration-300">
-                    Check Status
-                </button>
-            </form>
-        </div>
-    </div>
 
     <script>
         function togglePassword(inputId) {
@@ -272,9 +208,6 @@
             this.setAttribute('aria-invalid', String(hasAnswer && !isCorrect));
         });
 
-        document.getElementById('status_lrn')?.addEventListener('input', function () {
-            this.value = this.value.replace(/\D/g, '').slice(0, 12);
-        });
     </script>
     <x-auth-session-sync />
 </body>

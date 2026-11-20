@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreSubjectRequest;
 use App\Http\Requests\Admin\UpdateSubjectRequest;
 use App\Models\Cluster;
+use App\Models\GradeLevel;
 use App\Models\PreferredCourse;
 use App\Models\Subject;
 use App\Models\SubjectType;
@@ -77,6 +78,7 @@ class SubjectConfigurationController extends Controller
             'subjects' => $subjects,
             'tracks' => $tracks,
             'clusters' => $clusters,
+            'gradeLevels' => GradeLevel::query()->orderBy('grade_ID')->get(),
             'allTracks' => $allTracks,
             'subjectTypes' => SubjectType::query()->orderBy('sort_order')->get(['subject_type_ID', 'key', 'label']),
             'subjectClusters' => $allClusters,
@@ -156,6 +158,30 @@ class SubjectConfigurationController extends Controller
         $cluster->update($validated);
 
         return back()->with('success', 'Cluster updated successfully.');
+    }
+
+    public function storeGradeLevel(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'grade_label' => ['required', 'string', 'max:50', Rule::unique('grade_level', 'grade_label')],
+            'category' => ['required', Rule::in(['Junior High School', 'Senior High School'])],
+        ]);
+
+        GradeLevel::query()->create($validated);
+
+        return back()->with('success', 'Grade level created successfully.');
+    }
+
+    public function updateGradeLevel(Request $request, GradeLevel $gradeLevel): RedirectResponse
+    {
+        $validated = $request->validate([
+            'grade_label' => ['required', 'string', 'max:50', Rule::unique('grade_level', 'grade_label')->ignore($gradeLevel->grade_ID, 'grade_ID')],
+            'category' => ['required', Rule::in(['Junior High School', 'Senior High School'])],
+        ]);
+
+        $gradeLevel->update($validated);
+
+        return back()->with('success', 'Grade level updated successfully.');
     }
 
     public function storePreferredCourse(Request $request): RedirectResponse

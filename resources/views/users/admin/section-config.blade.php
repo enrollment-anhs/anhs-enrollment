@@ -53,7 +53,7 @@
                 <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21-4.35-4.35m1.35-5.65a7 7 0 1 1-14 0 7 7 0 0 1 14 0z"></path>
                 </svg>
-                <input type="search" aria-label="Search sections" name="search" value="{{ request('search') }}" placeholder="Search section or room"
+                <input type="search" aria-label="Search sections" name="search" value="{{ request('search') }}" placeholder="Search section"
                     class="h-10 w-full rounded-lg border border-gray-200 bg-gray-50 pl-9 pr-3 text-sm outline-none transition focus:border-[#296374] focus:bg-white focus:ring-2 focus:ring-[#296374]/10">
             </div>
             <select name="cluster_ID" class="h-10 w-full min-w-0 rounded-lg border border-gray-200 bg-white px-3 text-sm font-medium text-gray-700 outline-none transition focus:border-[#296374] focus:ring-2 focus:ring-[#296374]/10">
@@ -74,12 +74,6 @@
                     <option value="{{ $year->SY_ID }}" @selected($selectedSchoolYearId === (int) $year->SY_ID)>{{ $year->school_year }}</option>
                 @endforeach
             </select>
-            <select name="curriculum_grade_level_ID" class="h-10 w-full min-w-0 rounded-lg border border-gray-200 bg-white px-3 text-sm font-medium text-gray-700 outline-none transition focus:border-[#296374] focus:ring-2 focus:ring-[#296374]/10">
-                <option value="">All curricula</option>
-                @foreach ($curriculums as $curriculum)
-                    <option value="{{ $curriculum->curriculum_ID }}" @selected((int) request('curriculum_grade_level_ID') === (int) $curriculum->curriculum_ID)>{{ $curriculum->name }}</option>
-                @endforeach
-            </select>
             <select name="status" class="h-10 w-full min-w-0 rounded-lg border border-gray-200 bg-white px-3 text-sm font-medium text-gray-700 outline-none transition focus:border-[#296374] focus:ring-2 focus:ring-[#296374]/10">
                 <option value="active" @selected(($status ?? 'active') === 'active')>Active</option>
                 <option value="inactive" @selected(($status ?? 'active') === 'inactive')>Inactive</option>
@@ -91,7 +85,7 @@
                 @endforeach
             </select>
             <button type="submit" class="inline-flex h-10 items-center justify-center rounded-lg px-4 text-sm font-bold text-white shadow-sm" style="background-color: #296374;">Apply</button>
-            @if (request()->hasAny(['search', 'cluster_ID', 'grade_level', 'SY_ID', 'curriculum_grade_level_ID', 'per_page', 'status']))
+            @if (request()->hasAny(['search', 'cluster_ID', 'grade_level', 'SY_ID', 'per_page', 'status']))
                 <a href="{{ route($managementRoutePrefix.'section-config.index', ['tab' => $detailsTab ? 'details' : 'creation']) }}" class="inline-flex h-10 items-center justify-center rounded-lg border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-600 transition hover:bg-gray-50">Reset</a>
             @endif
         </form>
@@ -106,9 +100,6 @@
                     <th class="border-r border-gray-200 px-4 py-1.5">Cluster</th>
                     @endif
                     <th class="border-r border-gray-200 px-4 py-1.5">Grade</th>
-                    @if($showSeniorColumns)
-                    <th class="border-r border-gray-200 px-4 py-1.5">Semester</th>
-                    @endif
                     <th class="border-r border-gray-200 px-4 py-1.5">Adviser</th>
                     <th class="border-r border-gray-200 px-4 py-1.5">Academic Year</th>
                     @if($detailsTab)
@@ -133,8 +124,6 @@
                             'grade_level' => $section->grade_level,
                             'staff_ID' => $section->staff_ID,
                             'SY_ID' => $section->SY_ID,
-                            'curriculum_grade_level_ID' => $section->curriculum_grade_level_ID,
-                            'room' => $section->room,
                             'capacity' => $section->capacity,
                         ];
                     @endphp
@@ -144,9 +133,6 @@
                         <td class="border-r border-gray-100 px-4 py-1.5 text-gray-700">{{ optional($section->cluster)->name ?? '—' }}</td>
                         @endif
                         <td class="border-r border-gray-100 px-4 py-1.5 text-gray-700">{{ preg_replace('/\D+/', '', $section->grade_level) }}</td>
-                        @if($showSeniorColumns)
-                        <td class="border-r border-gray-100 px-4 py-1.5 text-gray-700">{{ $section->curriculumGradeLevel?->gradingSemester?->label ?? '—' }}</td>
-                        @endif
                         <td class="border-r border-gray-100 px-4 py-1.5 text-gray-700">{{ $adviserName }}</td>
                         <td class="border-r border-gray-100 px-4 py-1.5 text-gray-700">{{ optional($section->academicYear)->school_year ?? '—' }}</td>
                         @if($detailsTab)
@@ -303,43 +289,16 @@
                             <p class="mt-1 text-xs font-medium text-red-600">{{ $message }}</p>
                         @enderror
                     </div>
-                    <div>
-                        <label for="section_curriculum_grade_level_id" class="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gray-600">Curriculum grade level <span class="text-red-500">*</span></label>
-                        <select id="section_curriculum_grade_level_id" name="curriculum_grade_level_ID" required
-                            class="{{ $fieldClass }} {{ $errors->has('curriculum_grade_level_ID') ? 'border-red-300' : 'border-gray-200' }}">
-                            <option value="">Select curriculum</option>
-                            @foreach ($curriculums as $curriculum)
-                                <option value="{{ $curriculum->curriculum_ID }}" @selected((string) old('curriculum_grade_level_ID') === (string) $curriculum->curriculum_ID)>{{ $curriculum->name }}</option>
-                            @endforeach
-                        </select>
-                        @error('curriculum_grade_level_ID')
-                            <p class="mt-1 text-xs font-medium text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
                 </div>
 
-                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <div>
-                        <label for="section_room" class="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gray-600">Room</label>
-                        <select id="section_room" name="room" class="{{ $fieldClass }} {{ $errors->has('room') ? 'border-red-300' : 'border-gray-200' }}">
-                            <option value="">No room assigned</option>
-                            @foreach ($rooms as $room)
-                                <option value="{{ $room->name }}" @selected(old('room') === $room->name)>{{ $room->name }}</option>
-                            @endforeach
-                        </select>
-                        @error('room')
-                            <p class="mt-1 text-xs font-medium text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-                    <div>
-                        <label for="section_capacity" class="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gray-600">Capacity <span class="text-red-500">*</span></label>
-                        <input id="section_capacity" name="capacity" type="text" inputmode="numeric" pattern="[0-9]{1,3}" maxlength="3" autocomplete="off" value="{{ old('capacity') }}" required
-                            class="{{ $fieldClass }} {{ $errors->has('capacity') ? 'border-red-300' : 'border-gray-200' }}">
-                        <p class="mt-1 text-xs text-gray-500">Numbers only, up to 100.</p>
-                        @error('capacity')
-                            <p class="mt-1 text-xs font-medium text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
+                <div>
+                    <label for="section_capacity" class="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gray-600">Capacity <span class="text-red-500">*</span></label>
+                    <input id="section_capacity" name="capacity" type="text" inputmode="numeric" pattern="[0-9]{1,3}" maxlength="3" autocomplete="off" value="{{ old('capacity') }}" required
+                        class="{{ $fieldClass }} {{ $errors->has('capacity') ? 'border-red-300' : 'border-gray-200' }}">
+                    <p class="mt-1 text-xs text-gray-500">Numbers only, up to 100.</p>
+                    @error('capacity')
+                        <p class="mt-1 text-xs font-medium text-red-600">{{ $message }}</p>
+                    @enderror
                 </div>
             </div>
 
@@ -384,8 +343,6 @@
             document.getElementById('section_grade_level').value = section.grade_level || '';
             document.getElementById('section_staff_id').value = section.staff_ID || '';
             document.getElementById('section_sy_id').value = section.SY_ID || '';
-            document.getElementById('section_curriculum_grade_level_id').value = section.curriculum_grade_level_ID || '';
-            document.getElementById('section_room').value = section.room || '';
             document.getElementById('section_capacity').value = section.capacity || '';
         } else {
             title.textContent = 'Add Section';

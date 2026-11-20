@@ -35,6 +35,11 @@
         grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
     }
 
+    /* List view deliberately overrides the responsive card grid: one section per row. */
+    .guidance-ui .guidance-section-grid.guidance-section-list {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
     .guidance-content .xl\:grid-cols-5 {
         grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
     }

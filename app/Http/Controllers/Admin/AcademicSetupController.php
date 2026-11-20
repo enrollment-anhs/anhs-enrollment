@@ -12,10 +12,7 @@ class AcademicSetupController extends Controller
     {
         return view('users.admin.academic-setup', [
             'yearData' => app(AcademicYearConfigurationController::class)->pageData($request),
-            'termData' => app(GradingTermConfigurationController::class)->pageData($request),
-            'setupTab' => $request->routeIs('*.grading-term-config.*')
-                ? 'grading-term-config'
-                : 'academic-year-config',
+            'setupTab' => 'academic-year-config',
         ]);
     }
 }

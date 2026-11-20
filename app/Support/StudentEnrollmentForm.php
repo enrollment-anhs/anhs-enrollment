@@ -28,7 +28,7 @@ class StudentEnrollmentForm
             'layout' => 'layouts.public-enrollment',
             'pageTitle' => 'Registration',
             'heading' => 'Student Registration',
-            'subheading' => 'Complete the enrollment application. You will be temporarily enrolled so you can sign in and submit the remaining documents.',
+            'subheading' => 'Complete the enrollment application. The school will review the submission and process any remaining requirements.',
             'enrollmentStoreRoute' => 'register.store',
             'enrollmentStoreUrl' => null,
             'enrollmentMethod' => null,
@@ -42,13 +42,10 @@ class StudentEnrollmentForm
             'ignoreStudentId' => null,
             'fromSectionId' => null,
             'tracks' => Track::query()->orderBy('name')->get(['track_ID', 'name']),
-            'clusters' => Cluster::query()
-                ->with([
-                    'subjects' => fn ($query) => $query
-                        ->where('status', 'active')
-                        ->whereHas('subjectType', fn ($typeQuery) => $typeQuery->where('key', 'elective'))
-                        ->orderBy('title'),
-                ])
+            'clusters' => Cluster::query()->with(['subjects' => fn ($query) => $query
+                ->where('status', 'active')
+                ->whereHas('subjectType', fn ($typeQuery) => $typeQuery->where('key', 'elective'))
+                ->orderBy('title')])
                 ->orderBy('name')
                 ->get(['cluster_ID', 'track_ID', 'name']),
             'gradeLevels' => GradeLevel::options(),
@@ -68,11 +65,7 @@ class StudentEnrollmentForm
         $request->merge(CapitalizesFormText::apply($request->all()));
 
         $isSeniorHigh = in_array((string) $request->input('grade_level'), ['11', '12'], true);
-        $electiveIds = collect($request->input('elective_ids', []))
-            ->filter(fn ($id): bool => is_scalar($id) && filled($id))
-            ->values()
-            ->all();
-
+        $electiveIds = collect($request->input('elective_ids', []))->filter(fn ($id): bool => is_scalar($id) && filled($id))->values()->all();
         $request->merge([
             'father_is_deceased' => $request->boolean('father_is_deceased'),
             'mother_is_deceased' => $request->boolean('mother_is_deceased'),
@@ -98,7 +91,10 @@ class StudentEnrollmentForm
     public static function rules(?int $ignoreStudentId = null): array
     {
         return [
-            'grade_level' => ['required', 'in:7,8,9,10,11,12'],
+            // Grade levels are managed from Tracks & Grade Levels. Do not
+            // duplicate that list here, otherwise a configured grade can be
+            // shown in the form but rejected when it is submitted.
+            'grade_level' => ['required', Rule::in(self::enrollmentGradeNumbers())],
             'LRN' => ['required', 'digits:12', Rule::unique('students', 'lrn')->ignore($ignoreStudentId)],
             'semester' => ['nullable', 'in:first,second'],
             'track_ID' => ['nullable', 'integer', 'exists:tracks,track_ID'],
@@ -112,7 +108,7 @@ class StudentEnrollmentForm
             'last_school_year_completed_start' => ['nullable', 'digits:4'],
             'last_school_year_completed_end' => ['nullable', 'digits:4'],
             'last_school_attended' => ['required', 'string', 'max:255'],
-            'school_id_from_previous_school' => ['nullable', 'digits:6'],
+            'school_id_from_previous_school' => ['nullable', 'string', 'max:255'],
             'first_name' => ['required', 'string', 'max:255'],
             'middle_name' => ['nullable', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
@@ -121,7 +117,7 @@ class StudentEnrollmentForm
             'birthplace' => ['required', 'string', 'max:255'],
             'gender' => ['required', 'in:Male,Female'],
             'contact_no' => ['required', 'regex:/^\+63\d{10}$/'],
-            'email' => ['required', 'email', 'max:255', Rule::unique('students', 'email')->ignore($ignoreStudentId)],
+            'email' => ['nullable', 'email', 'max:255', Rule::unique('students', 'email')->ignore($ignoreStudentId)],
             'religion' => ['required', 'string', Rule::exists('religions', 'name')],
             'mother_tongue' => ['required', 'string', 'max:255'],
             'ip_community' => ['required', 'in:No,Yes'],
@@ -224,30 +220,14 @@ class StudentEnrollmentForm
                     }
                 }
 
-                $selectedTrack = ! empty($data['track_ID'])
-                    ? Track::query()->find($data['track_ID'])
-                    : null;
-                $requiredElectiveCount = $selectedTrack?->isAcademic() ? 2 : 1;
-                $electiveIds = collect($data['elective_ids'] ?? [])
-                    ->filter(fn ($id) => is_scalar($id) && filled($id))
-                    ->map(fn ($id) => (string) $id)
-                    ->unique()
-                    ->values()
-                    ->all();
-                if (count($electiveIds) !== $requiredElectiveCount) {
-                    $label = $requiredElectiveCount === 2 ? 'two different electives' : 'one elective';
-                    $validator->errors()->add('elective_ids', "Please choose {$label} for the selected track.");
-                } else {
-                    $validElectiveCount = Subject::query()
-                        ->whereIn('subject_ID', $electiveIds)
-                        ->where('status', 'active')
-                        ->whereHas('subjectType', fn ($query) => $query->where('key', 'elective'))
-                        ->count();
-
-                    if ($validElectiveCount !== $requiredElectiveCount) {
-                        $validator->errors()->add('elective_ids', 'Every selection must be an active elective.');
-                    }
+                $requiredElectiveCount = Track::query()->find($data['track_ID'])?->isAcademic() ? 2 : 1;
+                $electiveIds = collect($data['elective_ids'] ?? [])->filter()->unique()->values()->all();
+                if (count($electiveIds) !== $requiredElectiveCount
+                    || Subject::query()->whereIn('subject_ID', $electiveIds)->where('status', 'active')
+                        ->whereHas('subjectType', fn ($query) => $query->where('key', 'elective'))->count() !== $requiredElectiveCount) {
+                    $validator->errors()->add('elective_ids', 'Choose the required active elective(s) for the selected track.');
                 }
+
             }
 
             if (LearnerType::requiresPreviousSchool($data['learner_type'] ?? null)) {
@@ -428,6 +408,26 @@ class StudentEnrollmentForm
             'available' => ! $exists,
             'message' => $exists ? 'This LRN is already registered.' : null,
         ];
+    }
+
+    /**
+     * Return the numeric values represented by the configured grade levels.
+     *
+     * The enrollment form stores the numeric portion for compatibility with
+     * existing enrollment records (for example, "11" for "Grade 11").
+     *
+     * @return array<int, string>
+     */
+    private static function enrollmentGradeNumbers(): array
+    {
+        return GradeLevel::query()
+            ->orderBy('grade_ID')
+            ->pluck('grade_label')
+            ->map(fn (string $label): string => preg_replace('/\D+/', '', $label) ?: '')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
     }
 
     /**

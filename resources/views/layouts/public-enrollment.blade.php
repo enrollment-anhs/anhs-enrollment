@@ -17,7 +17,6 @@
 
             <nav class="flex items-center flex-wrap justify-center gap-6 sm:gap-8 pr-6">
                 <a href="{{ route('home') }}" class="text-[#0C2C55] hover:text-[#0C2C55]/80 font-medium transition duration-200 text-sm sm:text-base uppercase tracking-wide">Home</a>
-                <a href="{{ route('login') }}" class="text-[#0C2C55] hover:text-[#0C2C55]/80 font-medium transition duration-200 text-sm sm:text-base uppercase tracking-wide">Login</a>
             </nav>
         </div>
     </header>

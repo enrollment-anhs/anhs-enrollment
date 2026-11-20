@@ -21,7 +21,7 @@ class GuidanceEnrollmentController extends Controller
             'layout' => \App\Support\AcademicPortal::layout('guidance'),
             'pageTitle' => 'Register Student',
             'heading' => 'Register Student',
-            'subheading' => 'Enroll a student through the school office. The student will be temporarily enrolled and can sign in to upload remaining documents.',
+            'subheading' => 'Enroll a student through the school office. The student will be temporarily enrolled while the school processes remaining requirements.',
             'enrollmentStoreRoute' => \App\Support\AcademicPortal::routeName('guidance.enrollments.store'),
             'checkLrnRoute' => route(\App\Support\AcademicPortal::routeName('guidance.enrollments.check-lrn')),
             'checkEmailRoute' => route(\App\Support\AcademicPortal::routeName('guidance.enrollments.check-email')),
@@ -33,9 +33,14 @@ class GuidanceEnrollmentController extends Controller
     public function store(StoreStudentEnrollmentRequest $request): RedirectResponse
     {
         $enrollment = StudentEnrollmentRegistrar::register($request->validated());
+        $recordRoute = \App\Support\AcademicPortal::routeName('guidance.enrollments.show');
+        $createRoute = \App\Support\AcademicPortal::routeName('guidance.enrollments.create');
+        $managementRoute = \App\Support\AcademicPortal::routeName('guidance.enrollments.index');
 
-        return $this->redirectToShow($enrollment, $request, [
-            'status' => 'Student registered and temporarily enrolled. Login details were sent to the student email.',
+        return redirect()->route($createRoute)->with('staff_registration', [
+            'record_url' => route($recordRoute, $this->showParameters($enrollment, $request)),
+            'register_url' => route($createRoute),
+            'management_url' => route($managementRoute),
         ]);
     }
 

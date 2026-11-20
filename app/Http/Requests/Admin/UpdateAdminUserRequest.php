@@ -42,7 +42,7 @@ class UpdateAdminUserRequest extends FormRequest
                 Rule::unique($table, 'username')->ignore($key, $keyName),
             ],
             'email' => ['required', 'email', 'max:255', Rule::unique($table, 'email')->ignore($key, $keyName)],
-            'role' => ['nullable', Rule::exists('roles', 'role_name')],
+            'role' => ['nullable', Rule::in(['admin', 'principal', 'guidance counselor', 'teacher'])],
             'specialization_id' => [
                 Rule::excludeIf($account instanceof Student || ($this->input('role') ?: $account->roleName()) !== 'teacher'),
                 'nullable', 'integer', Rule::exists('specializations', 'id'),

@@ -3,7 +3,6 @@
 namespace App\Auth;
 
 use App\Models\Staff;
-use App\Models\Student;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\UserProvider;
 use Illuminate\Support\Facades\Hash;
@@ -19,7 +18,6 @@ class MergedUserProvider implements UserProvider
 
             return match ($type) {
                 'staff' => $this->activeAccount(Staff::query()->find($id)),
-                'student' => $this->activeAccount(Student::query()->find($id)),
                 default => null,
             };
         }
@@ -48,11 +46,7 @@ class MergedUserProvider implements UserProvider
         return Staff::query()
             ->where('username', $login)
             ->orWhere('email', $login)
-            ->first()
-            ?? Student::query()
-                ->where('username', $login)
-                ->orWhere('email', $login)
-                ->first();
+            ->first();
     }
 
     public function validateCredentials(Authenticatable $user, #[\SensitiveParameter] array $credentials): bool

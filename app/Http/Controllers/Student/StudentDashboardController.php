@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Student\FilterStudentSubjectsRequest;
 use App\Http\Requests\Student\StoreStudentDocumentsRequest;
 use App\Http\Requests\Student\UpdateStudentProfileRequest;
 use App\Models\AcademicYear;
@@ -381,83 +380,6 @@ class StudentDashboardController extends Controller
                 $selectedEnrollment?->section,
                 $selectedEnrollment?->semester,
             ),
-        ]);
-    }
-
-    public function subjects(FilterStudentSubjectsRequest $request): View
-    {
-        $student = $request->user();
-        $filters = $request->validated();
-
-        $enrollments = Enrollment::query()
-            ->with([
-                'academicYear',
-                'section.gradeLevel',
-                'gradeLevel',
-                'gradingSemester',
-                'cluster.track',
-                'track',
-                'electives',
-                'enrollmentStatus',
-            ])
-            ->where('student_ID', $student->id)
-            ->orderByDesc('created_at')
-            ->get();
-
-        // Filters intentionally come from the student's own enrollment history,
-        // so a learner cannot browse offerings that were never assigned to them.
-        $gradeLevels = $enrollments
-            ->map(fn (Enrollment $enrollment) => $enrollment->getRelation('gradeLevel'))
-            ->filter()
-            ->unique('grade_ID')
-            ->sortBy('grade_ID')
-            ->values();
-        $selectedGrade = $gradeLevels->firstWhere('grade_ID', (int) ($filters['grade_ID'] ?? 0))
-            ?? $gradeLevels->first();
-        $gradeEnrollments = $enrollments
-            ->filter(fn (Enrollment $enrollment): bool => (int) $enrollment->getRelation('gradeLevel')?->grade_ID === (int) $selectedGrade?->grade_ID)
-            ->values();
-        $isSeniorHigh = in_array($selectedGrade?->grade_label, ['Grade 11', 'Grade 12'], true);
-        $semesters = $isSeniorHigh
-            ? $gradeEnrollments
-                ->map(fn (Enrollment $enrollment) => $enrollment->gradingSemester)
-                ->filter(fn ($semester): bool => $semester !== null && in_array($semester->key, [GradingSemester::FIRST, GradingSemester::SECOND], true))
-                ->unique('semester_ID')
-                ->sortBy('sort_order')
-                ->values()
-            : collect();
-        $selectedSemester = $semesters->firstWhere('semester_ID', (int) ($filters['semester_ID'] ?? 0))
-            ?? $semesters->first();
-        $selectedEnrollment = $isSeniorHigh
-            ? $gradeEnrollments->first(
-                fn (Enrollment $enrollment): bool => (int) $enrollment->gradingSemester?->semester_ID === (int) $selectedSemester?->semester_ID
-            )
-            : $gradeEnrollments->first();
-        $studentSubjects = $selectedEnrollment
-            ? StudentSubject::query()
-                ->with(['subject'])
-                ->where('enrollment_ID', $selectedEnrollment->enrollment_ID)
-                ->orderBy('subject_ID')
-                ->get()
-            : collect();
-
-        if ($selectedEnrollment?->section && ($mapeh = \App\Models\MapehConfiguration::forSection($selectedEnrollment->section))) {
-            $excludedSubjectIds = \App\Models\CurriculumSubject::query()
-                ->whereIn('curr_subj_ID', [$mapeh->parent_curr_subj_ID, ...$mapeh->inactiveComponentIds()])
-                ->pluck('subject_ID')->map(fn ($id) => (int) $id)->all();
-            $studentSubjects = $studentSubjects->reject(fn ($row) => in_array((int) $row->subject_ID, $excludedSubjectIds, true))->values();
-        }
-
-        return view('users.student.subjects', [
-            'student' => $student,
-            'application' => $student?->application,
-            'selectedEnrollment' => $selectedEnrollment,
-            'studentSubjects' => $studentSubjects,
-            'gradeLevels' => $gradeLevels,
-            'selectedGrade' => $selectedGrade,
-            'isSeniorHigh' => $isSeniorHigh,
-            'semesters' => $semesters,
-            'selectedSemester' => $selectedSemester,
         ]);
     }
 

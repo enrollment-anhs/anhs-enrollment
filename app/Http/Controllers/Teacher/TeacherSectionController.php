@@ -29,7 +29,6 @@ use App\Support\AssignmentGradeTermUnlocker;
 use App\Support\LearnerPermanentRecordBuilder;
 use App\Support\PromotionEligibility;
 use App\Support\PromotionRegistrar;
-use App\Support\RegistrarGradeDigest;
 use App\Support\Sf2AttendanceImporter;
 use App\Support\Sf9AttendanceSummary;
 use App\Support\Sf9ReportCardBuilder;
@@ -1550,8 +1549,6 @@ class TeacherSectionController extends Controller
                 'reviewed_at' => null,
                 'grade_return_reason_ID' => null,
             ]);
-
-            RegistrarGradeDigest::record($assignment->assignment_ID, $grades->pluck('term_ID')->unique()->sort());
 
             return $updated;
         });

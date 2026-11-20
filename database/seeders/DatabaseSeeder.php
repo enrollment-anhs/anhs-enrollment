@@ -8,41 +8,32 @@ use Illuminate\Database\Seeder;
 class DatabaseSeeder extends Seeder
 {
     /**
-     * Seed the application's database.
+     * Seed only reference data required by the enrollment workflow.
      */
     public function run(): void
     {
-        $this->call(RoleSeeder::class);
-        $this->call(DefaultNonStudentUsersSeeder::class);
-        $this->call(TrackSeeder::class);
-        $this->call(ClusterSeeder::class);
-        $this->call(PreferredCourseSeeder::class);
-        $this->call(GradeLevelSeeder::class);
-        $this->call(DataStatusSeeder::class);
-        $this->call(GradingSemesterSeeder::class);
-        $this->call(SubjectTypeSeeder::class);
-        $this->call(SubjectSeeder::class);
-        $this->call(CurriculumSeeder::class);
-        $this->call(CurriculumSubjectSeeder::class);
-        $this->call(MonthSeeder::class);
-        $this->call(AcademicYearSeeder::class);
-        $this->call(CombinedSubjectConfigurationSeeder::class);
-        $this->call(SectionSeeder::class);
-        $this->call(RoomSeeder::class);
-        $this->call(TeacherSubjectAssignmentSeeder::class);
-        $this->call(MovementReasonSeeder::class);
-        $this->call(DocumentReturnReasonSeeder::class);
-        $this->call(GradeReturnReasonSeeder::class);
-        $this->call(DocumentTypeSeeder::class);
-        $this->call(DocumentStatusSeeder::class);
-        $this->call(ReligionSeeder::class);
-        $this->call(EnrollmentStatusSeeder::class);
-        $this->call(PlacementStatusSeeder::class);
-        $this->call(PromotionStatusSeeder::class);
-        $this->call(LearnerTypeSeeder::class);
-        $this->call(GradingPeriodStatusSeeder::class);
-        $this->call(GradeStatusSeeder::class);
-        $this->call(NotificationTypeSeeder::class);
+        $this->call([
+            RoleSeeder::class,
+            DefaultNonStudentUsersSeeder::class,
+            TrackSeeder::class,
+            ClusterSeeder::class,
+            SubjectTypeSeeder::class,
+            SubjectSeeder::class,
+            PreferredCourseSeeder::class,
+            GradeLevelSeeder::class,
+            SchoolInformationSeeder::class,
+            ReligionSeeder::class,
+            AcademicYearSeeder::class,
+            MovementReasonSeeder::class,
+            DocumentReturnReasonSeeder::class,
+            DocumentTypeSeeder::class,
+            DocumentStatusSeeder::class,
+            NotificationTypeSeeder::class,
+            EnrollmentStatusSeeder::class,
+            PlacementStatusSeeder::class,
+            PromotionStatusSeeder::class,
+            LearnerTypeSeeder::class,
+        ]);
 
         foreach (
             [

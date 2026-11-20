@@ -70,7 +70,6 @@ class EnrollmentDocumentCompletion
         $enrollment->enrollment_status = EnrollmentStatus::ENROLLED;
         $enrollment->save();
 
-        StudentAccountProvisioner::ensure($enrollment, $actor);
         $enrollment->load(['academicYear', 'student']);
         StudentEnrollmentNotifier::send($student->fresh() ?? $student, $enrollment, EnrollmentStatus::ENROLLED);
 

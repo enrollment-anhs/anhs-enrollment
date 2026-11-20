@@ -7,9 +7,7 @@ use App\Http\Requests\Admin\CopySectionsRequest;
 use App\Http\Requests\Admin\StoreSectionRequest;
 use App\Models\AcademicYear;
 use App\Models\Cluster;
-use App\Models\Curriculum;
 use App\Models\GradeLevel;
-use App\Models\Room;
 use App\Models\Section;
 use App\Models\Staff;
 use Illuminate\Http\RedirectResponse;
@@ -35,7 +33,6 @@ class SectionConfigurationController extends Controller
         if ($detailsTab && ! $request->has('SY_ID')) {
             $syId = (int) AcademicYear::query()->where('status', true)->orderByDesc('SY_ID')->value('SY_ID');
         }
-        $curriculumGradeLevelId = $request->integer('curriculum_grade_level_ID');
         $status = $request->string('status')->toString();
         if ($status === '') {
             $status = 'active';
@@ -50,11 +47,10 @@ class SectionConfigurationController extends Controller
             ->when($detailsTab, fn ($query) => $query->active())
             ->withCount(['enrollments as enrolled_students_count' => fn ($query) => $query
                 ->whereIn('enrollment_status_ID', \App\Models\EnrollmentStatus::activeIds())])
-            ->with(['cluster', 'gradeLevel', 'adviser', 'academicYear', 'curriculumGradeLevel.gradeLevel', 'curriculumGradeLevel.gradingSemester'])
+            ->with(['cluster', 'gradeLevel', 'adviser', 'academicYear'])
             ->when($search !== '', function ($query) use ($search): void {
                 $query->where(function ($inner) use ($search): void {
-                    $inner->where('name', 'like', "%{$search}%")
-                        ->orWhere('room', 'like', "%{$search}%");
+                    $inner->where('name', 'like', "%{$search}%");
                 });
             })
             ->when($clusterId > 0, function ($query) use ($clusterId): void {
@@ -65,9 +61,6 @@ class SectionConfigurationController extends Controller
             })
             ->when($syId > 0, function ($query) use ($syId): void {
                 $query->where('SY_ID', $syId);
-            })
-            ->when($curriculumGradeLevelId > 0, function ($query) use ($curriculumGradeLevelId): void {
-                $query->where('curriculum_grade_level_ID', $curriculumGradeLevelId);
             })
             ->when($status === 'active', function ($query): void {
                 $query->where('status', true);
@@ -84,10 +77,6 @@ class SectionConfigurationController extends Controller
 
         $clusters = Cluster::query()->orderBy('name')->get(['cluster_ID', 'name']);
         $academicYears = AcademicYear::query()->orderByDesc('SY_ID')->get(['SY_ID', 'school_year', 'status']);
-        $curriculums = Curriculum::query()
-            ->whereHas('dataStatus', fn ($status) => $status->where('key', 'active'))
-            ->orderBy('name')
-            ->get(['curriculum_ID', 'name']);
         $staffs = Staff::query()
             ->where('status', 'active')
             ->orderBy('last_name')
@@ -115,10 +104,8 @@ class SectionConfigurationController extends Controller
             'enrollments' => $enrollments,
             'latestImport' => $latestImport,
             'sections' => $sections,
-            'rooms' => Room::query()->orderBy('name')->get(['name']),
             'clusters' => $clusters,
             'academicYears' => $academicYears,
-            'curriculums' => $curriculums,
             'staffs' => $staffs,
             'gradeLevels' => GradeLevel::options(),
             'perPage' => $perPage,
@@ -176,8 +163,6 @@ class SectionConfigurationController extends Controller
                     'name' => $source->name,
                     'grade_ID' => $source->grade_ID,
                     'cluster_ID' => $source->cluster_ID,
-                    'curriculum_grade_level_ID' => $source->curriculum_grade_level_ID,
-                    'room' => $source->room,
                     'capacity' => $source->capacity,
                     'SY_ID' => $data['target_SY_ID'],
                     'staff_ID' => $data['adviser_mode'] === 'keep' ? $source->staff_ID : null,
@@ -231,12 +216,13 @@ class SectionConfigurationController extends Controller
      */
     private function sectionAttributes(array $validated): array
     {
-        $offering = Curriculum::query()->findOrFail($validated['curriculum_grade_level_ID']);
+        $gradeId = GradeLevel::idForValue($validated['grade_level']);
 
-        // A section always belongs to one curriculum-grade-level offering.
-        // Copy its context rather than trusting duplicated form values.
-        $validated['grade_ID'] = $offering->grade_ID;
-        $validated['cluster_ID'] = $offering->cluster_ID;
+        if (! $gradeId) {
+            throw ValidationException::withMessages(['grade_level' => 'The selected grade level is unavailable.']);
+        }
+
+        $validated['grade_ID'] = $gradeId;
         unset($validated['grade_level']);
 
         return $validated;

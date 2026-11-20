@@ -7,7 +7,6 @@ use App\Http\Controllers\ForcePasswordController;
 use App\Http\Controllers\Guidance\GuidanceDashboardController;
 use App\Http\Controllers\Guidance\GuidanceEnrollmentController;
 use App\Http\Controllers\Principal\PrincipalDashboardController;
-use App\Http\Controllers\Registrar\RegistrarDashboardController;
 use App\Http\Controllers\RemediationController;
 use App\Http\Controllers\StaffAccountController;
 use App\Http\Controllers\Student\SecondSemesterEnrollmentController;
@@ -55,7 +54,6 @@ Route::middleware(['auth', 'verified', 'force_password'])->group(function () {
             'admin' => redirect()->route('admin.dashboard'),
             'guidance counselor' => redirect()->route('guidance.dashboard'),
             'teacher' => redirect()->route('teacher.dashboard'),
-            'registrar' => redirect()->route('registrar.dashboard'),
             'principal' => redirect()->route('principal.dashboard'),
             default => view('dashboard'),
         };
@@ -111,9 +109,6 @@ Route::middleware(['auth', 'verified', 'force_password'])->group(function () {
     Route::get('/student/grades', [StudentDashboardController::class, 'grades'])
         ->middleware('student')
         ->name('student.grades');
-    Route::get('/student/subjects', [StudentDashboardController::class, 'subjects'])
-        ->middleware('student')
-        ->name('student.subjects');
     Route::get('/student/second-semester-enrollment', [SecondSemesterEnrollmentController::class, 'create'])
         ->middleware('student')
         ->name('student.second-semester-enrollment.create');
@@ -213,61 +208,6 @@ Route::middleware(['auth', 'verified', 'force_password'])->group(function () {
     Route::get('/teacher/sections/{assignment}/summary/print', [TeacherSectionController::class, 'summaryPrint'])
         ->middleware('teacher')
         ->name('teacher.sections.summary.print');
-
-    Route::get('/registrar/reports', [\App\Http\Controllers\Registrar\RegistrarReportController::class, 'index'])
-        ->middleware('registrar')
-        ->name('registrar.reports.index');
-    Route::get('/registrar/dashboard', [RegistrarDashboardController::class, 'index'])
-        ->middleware('registrar')
-        ->name('registrar.dashboard');
-    Route::get('/registrar/students', [RegistrarDashboardController::class, 'students'])
-        ->middleware('registrar')
-        ->name('registrar.students');
-    Route::get('/registrar/students/{student}', [RegistrarDashboardController::class, 'show'])
-        ->middleware('registrar')
-        ->name('registrar.students.show');
-    Route::get('/registrar/students/{student}/documents/{document}/view', [RegistrarDashboardController::class, 'viewDocument'])
-        ->middleware('registrar')
-        ->name('registrar.students.documents.view');
-    Route::get('/registrar/students/{student}/enrollments/{enrollment}/sf9', [RegistrarDashboardController::class, 'studentSf9'])
-        ->middleware('registrar')
-        ->name('registrar.students.sf9');
-    Route::get('/registrar/students/{student}/sf10', [RegistrarDashboardController::class, 'studentSf10'])
-        ->middleware('registrar')
-        ->name('registrar.students.sf10');
-    Route::get('/registrar/grade-approvals', [RegistrarDashboardController::class, 'gradeApprovals'])
-        ->middleware('registrar')
-        ->name('registrar.grade-approvals');
-    Route::post('/registrar/grade-approvals/approve-selected', [RegistrarDashboardController::class, 'approveSelectedGrades'])
-        ->middleware('registrar')
-        ->name('registrar.grade-approvals.approve-selected');
-    Route::get('/registrar/grade-approvals/{assignment}', [RegistrarDashboardController::class, 'showGradeApproval'])
-        ->middleware('registrar')
-        ->name('registrar.grade-approvals.show');
-    Route::post('/registrar/grade-approvals/{assignment}/approve', [RegistrarDashboardController::class, 'approveGrades'])
-        ->middleware('registrar')
-        ->name('registrar.grade-approvals.approve');
-    Route::post('/registrar/grade-approvals/{assignment}/reject', [RegistrarDashboardController::class, 'rejectGrades'])
-        ->middleware('registrar')
-        ->name('registrar.grade-approvals.reject');
-    Route::get('/registrar/class-subjects', [RegistrarDashboardController::class, 'classSubjects'])
-        ->middleware('registrar')
-        ->name('registrar.class-subjects.index');
-    Route::get('/registrar/classes/{section}', [RegistrarDashboardController::class, 'classStatus'])
-        ->middleware('registrar')
-        ->name('registrar.classes.status');
-    Route::get('/registrar/classes/{section}/subjects', [RegistrarDashboardController::class, 'sectionSubjects'])
-        ->middleware('registrar')
-        ->name('registrar.classes.subjects');
-    Route::get('/registrar/class-subjects/{assignment}', [RegistrarDashboardController::class, 'showClassSubject'])
-        ->middleware('registrar')
-        ->name('registrar.class-subjects.show');
-    Route::get('/registrar/class-subjects/{assignment}/grade-records', [RegistrarDashboardController::class, 'classSubjectGradeRecords'])
-        ->middleware('registrar')
-        ->name('registrar.class-subjects.grade-records');
-    Route::post('/registrar/class-subjects/{assignment}/unlock-term', [RegistrarDashboardController::class, 'unlockClassSubjectTerm'])
-        ->middleware('registrar')
-        ->name('registrar.class-subjects.unlock-term');
 
     Route::get('/principal/dashboard', [PrincipalDashboardController::class, 'index'])
         ->middleware('principal')

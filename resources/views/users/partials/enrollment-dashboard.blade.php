@@ -1,15 +1,12 @@
 @php
-    $isRegistrar = ($dashboardContext ?? 'guidance') === 'registrar';
     $isAdmin = ($dashboardContext ?? 'guidance') === 'admin';
     $isPrincipal = ($dashboardContext ?? 'guidance') === 'principal';
     $dashboardRoute = match ($dashboardContext ?? 'guidance') {
-        'registrar' => 'registrar.dashboard',
         'admin' => 'admin.dashboard',
         'principal' => 'principal.dashboard',
         default => 'guidance.dashboard',
     };
     $pageTitle = match ($dashboardContext ?? 'guidance') {
-        'registrar' => 'Registrar Dashboard',
         'admin' => 'Admin Dashboard',
         'principal' => 'Principal Dashboard',
         default => 'Guidance Dashboard',
@@ -19,15 +16,15 @@
         : ($isPrincipal
             ? 'School-wide enrollment overview for the active school year'
             : 'Enrollment overview for the active school year');
-    $totalEnrolleesUrl = $isRegistrar ? route('registrar.students') : ($isAdmin ? route('admin.users') : route('guidance.enrollments.index').'?status=all');
-    $enrolledUrl = $isRegistrar ? route('registrar.students', ['status' => 'enrolled']) : ($isAdmin ? route('admin.users') : route('guidance.enrollments.index').'?status=enrolled');
-    $temporaryUrl = $isRegistrar ? route('registrar.students', ['status' => 'temporarily_enrolled']) : ($isAdmin ? route('admin.users') : route('guidance.enrollments.index').'?status=temporarily_enrolled');
-    $transfereeUrl = $isRegistrar ? route('registrar.students') : ($isAdmin ? route('admin.users') : route('guidance.enrollments.index').'?status=all&learner_type=transferee');
-    $balikAralUrl = $isRegistrar ? route('registrar.students') : ($isAdmin ? route('admin.users') : route('guidance.enrollments.index').'?status=all&learner_type=balik_aral');
+    $totalEnrolleesUrl = $isAdmin ? route('admin.users') : route('guidance.enrollments.index').'?status=all';
+    $enrolledUrl = $isAdmin ? route('admin.users') : route('guidance.enrollments.index').'?status=enrolled';
+    $temporaryUrl = $isAdmin ? route('admin.users') : route('guidance.enrollments.index').'?status=temporarily_enrolled';
+    $transfereeUrl = $isAdmin ? route('admin.users') : route('guidance.enrollments.index').'?status=all&learner_type=transferee';
+    $balikAralUrl = $isAdmin ? route('admin.users') : route('guidance.enrollments.index').'?status=all&learner_type=balik_aral';
     $useStatLinks = ! $isAdmin && ! $isPrincipal;
-    $showEnrollmentNotifications = ! $isRegistrar && ! $isAdmin && ! $isPrincipal;
-    $showRecentApplications = ! $isRegistrar && ! $isAdmin && ! $isPrincipal;
-    $showAgeAlignmentReportLink = ! $isRegistrar && ! $isAdmin;
+    $showEnrollmentNotifications = ! $isAdmin && ! $isPrincipal;
+    $showRecentApplications = ! $isAdmin && ! $isPrincipal;
+    $showAgeAlignmentReportLink = ! $isAdmin;
     $ageAlignmentReportRoute = $isPrincipal ? 'principal.reports.age-for-grade' : 'guidance.reports.age-for-grade';
 @endphp
 
@@ -150,10 +147,6 @@
         </div>
     @if ($useStatLinks)</a>@else</div>@endif
 </div>
-@endif
-
-@if ($isPrincipal)
-    @include('users.principal.partials.open-grading-periods')
 @endif
 
 <div class="mb-8 grid grid-cols-1 gap-6 xl:grid-cols-2">

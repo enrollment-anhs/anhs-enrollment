@@ -7,18 +7,17 @@ use Illuminate\Database\Seeder;
 
 class NotificationTypeSeeder extends Seeder
 {
-    /**
-     * Seed the application's notification types table.
-     */
     public function run(): void
     {
-        foreach (NotificationType::definitions() as $type) {
+        foreach (array_filter(NotificationType::definitions(), fn (array $type): bool => in_array($type['slug'], [
+            NotificationType::ENROLLMENT_STATUS,
+            NotificationType::PLACEMENT_STATUS,
+            NotificationType::PLACEMENT_TEST_RECOMMENDED,
+            NotificationType::DOCUMENT_STATUS_UPDATED,
+        ], true)) as $type) {
             NotificationType::query()->updateOrCreate(
                 ['slug' => $type['slug']],
-                [
-                    'name' => $type['name'],
-                    'sort_order' => $type['sort_order'],
-                ],
+                ['name' => $type['name'], 'sort_order' => $type['sort_order']],
             );
         }
 

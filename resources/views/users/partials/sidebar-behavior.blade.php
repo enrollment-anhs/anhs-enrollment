@@ -9,8 +9,7 @@
         width: 18rem;
     }
 
-    .principal-layout .app-sidebar,
-    .registrar-layout .app-sidebar {
+    .principal-layout .app-sidebar {
         background-color: #fff;
         opacity: 1;
         backdrop-filter: none;

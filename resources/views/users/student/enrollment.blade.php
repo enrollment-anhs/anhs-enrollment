@@ -20,9 +20,9 @@
             'name' => $cluster->name,
         ])->values()
     );
-    $availableGradeLevels = collect($gradeLevels ?? [])->filter(function ($level) {
-        return in_array(str_replace('grade_', '', $level['value']), ['7', '8', '9', '10', '11', '12'], true);
-    });
+    // Grade Levels are configured in Tracks & Grade Levels. Enrollment must
+    // always use that managed list instead of maintaining a separate list.
+    $availableGradeLevels = collect($gradeLevels ?? []);
     $defaults = $formDefaults ?? [];
     $value = fn (string $key, mixed $fallback = '') => old($key, $defaults[$key] ?? $fallback);
     $selectedElectives = collect(old('elective_ids', $defaults['elective_ids'] ?? []))->map(fn ($id) => (string) $id)->values();
@@ -293,22 +293,56 @@
                 Enrollment Submitted Successfully
             </h2>
             <p class="mt-3 text-sm leading-6 text-gray-600 md:text-base">
-                An email has been sent to the email address you provided.
-            </p>
-            <p class="mt-3 text-sm leading-6 text-gray-600 md:text-base">
                 {{ session('status', 'Use Check Enrollment Status for updates on your application.') }}
             </p>
-
-            <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
-                <a href="{{ route('home') }}" class="inline-flex justify-center rounded-lg border border-gray-300 bg-white px-6 py-3 text-sm font-bold text-gray-700 shadow-sm transition hover:bg-gray-50">
-                    Back to Home
-                </a>
-                <a href="{{ route('login') }}" class="inline-flex justify-center rounded-lg px-6 py-3 text-sm font-bold text-white shadow-md transition hover:opacity-90" style="background-color: #296374;">
-                    Go to Login
-                </a>
+            <p class="mt-6 text-sm font-semibold text-[#296374]">Returning to the home page in <span id="registrationRedirectCountdown">10</span> seconds.</p>
+            <div class="mt-5">
+                <a href="{{ route('home') }}" class="inline-flex justify-center rounded-lg bg-[#296374] px-6 py-3 text-sm font-bold text-white shadow-md transition hover:opacity-90">Return Home Now</a>
             </div>
         </div>
     </div>
+    <script>
+        (() => {
+            const modal = document.getElementById('registrationSuccessModal');
+            const countdown = document.getElementById('registrationRedirectCountdown');
+            let remaining = 10;
+            const timer = window.setInterval(() => {
+                remaining -= 1;
+                if (countdown) countdown.textContent = String(Math.max(remaining, 0));
+                if (remaining <= 0) {
+                    window.clearInterval(timer);
+                    modal?.classList.add('hidden');
+                    window.location.assign(@json(route('home')));
+                }
+            }, 1000);
+        })();
+    </script>
+    @endif
+
+    @if (! $isPublicEnrollment && session('staff_registration'))
+        @php($staffRegistration = session('staff_registration'))
+        <div id="staffRegistrationSuccessModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="staffRegistrationSuccessTitle">
+            <div class="absolute inset-0 bg-slate-900/55"></div>
+            <div class="relative w-full max-w-md rounded-2xl border border-gray-100 bg-white p-8 text-center shadow-2xl">
+                <div class="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                    <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                </div>
+                <h2 id="staffRegistrationSuccessTitle" class="text-2xl font-bold tracking-tight text-gray-700">Student registered and temporarily enrolled.</h2>
+                <p class="mt-4 text-sm leading-6 text-gray-600">The new enrollment record has opened in a separate tab.</p>
+                <div class="mt-7 flex flex-col gap-3 sm:flex-row sm:justify-center">
+                    <a href="{{ $staffRegistration['register_url'] }}" class="inline-flex justify-center rounded-lg border border-gray-300 bg-white px-5 py-3 text-sm font-bold text-gray-700 shadow-sm transition hover:bg-gray-50">Register Another</a>
+                    <a href="{{ $staffRegistration['management_url'] }}" class="inline-flex justify-center rounded-lg bg-[#296374] px-5 py-3 text-sm font-bold text-white shadow-md transition hover:opacity-90">Open Enrollment Management</a>
+                </div>
+            </div>
+        </div>
+        <script>
+            (() => {
+                const recordUrl = @json($staffRegistration['record_url']);
+                window.open(recordUrl, '_blank', 'noopener');
+            })();
+        </script>
     @endif
 
     @if ($hasEnrollment)
@@ -392,10 +426,6 @@
             <div>
                 <label class="block text-xs font-semibold text-gray-500 mb-2">Cluster</label>
                 <p class="text-sm font-semibold text-gray-800">{{ $currentEnrollment->cluster?->name ?? 'Not applicable' }}</p>
-            </div>
-            <div>
-                <label class="block text-xs font-semibold text-gray-500 mb-2">Electives</label>
-                <p class="text-sm font-semibold text-gray-800">{{ $currentEnrollment->electives->pluck('title')->join(', ') ?: 'Not applicable' }}</p>
             </div>
             <div>
                 <label class="block text-xs font-semibold text-gray-500 mb-2">Submitted On</label>
@@ -505,20 +535,19 @@
 
             <div id="electives_container" class="mt-6 hidden">
                 <label class="block text-xs font-semibold text-gray-500 mb-2">Elective Selection</label>
-                <p id="elective_help" class="mb-3 text-xs text-gray-500">Choose electives from any cluster.</p>
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                     @for ($electiveIndex = 0; $electiveIndex < 2; $electiveIndex++)
                     <div data-elective-slot="{{ $electiveIndex + 1 }}">
                         <label for="elective_{{ $electiveIndex + 1 }}" class="block text-xs font-semibold text-gray-500 mb-2">Elective {{ $electiveIndex + 1 }}</label>
-                        <select name="elective_ids[]" id="elective_{{ $electiveIndex + 1 }}" class="elective-select w-full border border-gray-300 rounded-md px-4 py-3 focus:ring-2 focus:ring-[#296374]/20 focus:border-[#296374] outline-none transition-all text-gray-700 bg-white shadow-sm">
-                            <option value="">Select Elective {{ $electiveIndex + 1 }}</option>
+                        <select name="elective_ids[]" id="elective_{{ $electiveIndex + 1 }}" class="elective-select w-full border border-gray-300 rounded-md px-4 py-3">
+                            <option value="">Select Elective</option>
                             @foreach ($clusters ?? [] as $cluster)
                                 @if ($cluster->subjects->isNotEmpty())
-                                <optgroup label="{{ $cluster->name }}">
+                                    <optgroup label="{{ $cluster->name }}">
                                     @foreach ($cluster->subjects as $subject)
-                                    <option value="{{ $subject->subject_ID }}" {{ $selectedElectives->get($electiveIndex) === (string) $subject->subject_ID ? 'selected' : '' }}>{{ $subject->title }}</option>
+                                        <option value="{{ $subject->subject_ID }}" @selected($selectedElectives->get($electiveIndex) === (string) $subject->subject_ID)>{{ $subject->title }}</option>
                                     @endforeach
-                                </optgroup>
+                                    </optgroup>
                                 @endif
                             @endforeach
                         </select>
@@ -526,6 +555,7 @@
                     @endfor
                 </div>
             </div>
+
 
             <div class="mb-0 mt-6">
                 <label class="block text-xs font-semibold text-gray-500 mb-2">Learner Type <span class="text-gray-400 font-normal text-xs">(Ignore if not applicable.)</span></label>
@@ -566,7 +596,7 @@
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-gray-500 mb-2">School ID from Previous School<span id="required_field">*</span></label>
-                        <input type="text" inputmode="numeric" pattern="\d{6}" maxlength="6" name="school_id_from_previous_school" placeholder="Enter 6-digit school ID" value="{{ $value('school_id_from_previous_school') }}" class="w-full border border-gray-300 rounded-md px-4 py-3 focus:ring-2 focus:ring-[#296374]/20 focus:border-[#296374] outline-none transition-all text-gray-700 bg-white shadow-sm">
+                        <input type="text" name="school_id_from_previous_school" placeholder="Enter previous school ID" value="{{ $value('school_id_from_previous_school') }}" class="w-full border border-gray-300 rounded-md px-4 py-3 focus:ring-2 focus:ring-[#296374]/20 focus:border-[#296374] outline-none transition-all text-gray-700 bg-white shadow-sm">
                     </div>
                 </div>
             </div>
@@ -628,8 +658,8 @@
                     <input type="tel" name="contact_no" placeholder="+639XXXXXXXXX" value="{{ $value('contact_no', optional($application)->contact_no) }}" maxlength="13" inputmode="numeric" pattern="\+63\d{10}" class="w-full border border-gray-300 rounded-md px-4 py-3 focus:ring-2 focus:ring-[#296374]/20 focus:border-[#296374] outline-none transition-all text-gray-700 bg-white shadow-sm" required>
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-gray-500 mb-2">Email<span id="required_field">*</span></label>
-                    <input type="email" name="email" id="email_input" placeholder="Enter email address" value="{{ $value('email', optional($application)->email) }}" autocomplete="email" class="w-full border border-gray-300 rounded-md px-4 py-3 focus:ring-2 focus:ring-[#296374]/20 focus:border-[#296374] outline-none transition-all text-gray-700 bg-white shadow-sm" required>
+                    <label class="block text-xs font-semibold text-gray-500 mb-2">Email <span class="optional-field">(Optional)</span></label>
+                    <input type="email" name="email" id="email_input" placeholder="Enter email address" value="{{ $value('email', optional($application)->email) }}" autocomplete="email" class="w-full border border-gray-300 rounded-md px-4 py-3 focus:ring-2 focus:ring-[#296374]/20 focus:border-[#296374] outline-none transition-all text-gray-700 bg-white shadow-sm">
                     <p id="email_feedback" class="mt-1 text-xs text-red-600 hidden" role="alert"></p>
                 </div>
                 <div>
@@ -923,7 +953,6 @@
     const trackSelect = document.getElementById('track_ID');
     const clusterSelect = document.getElementById('cluster_ID');
     const electiveSelects = Array.from(document.querySelectorAll('.elective-select'));
-    const electiveHelp = document.getElementById('elective_help');
     const selectedCluster = @json((string) $value('cluster_ID'));
     const clustersByTrack = @json($clustersByTrack);
     const learnerDetails = document.getElementById('learner_details_container');
@@ -931,7 +960,6 @@
     const lastSchoolYearCompleted = document.getElementById('last_school_year_completed');
     const contactNumberInput = document.querySelector('input[name="contact_no"]');
     const contactNumberInputs = Array.from(document.querySelectorAll('input[name="contact_no"], input[name="father_contact_no"], input[name="mother_contact_no"], input[name="guardian_contact_no"]'));
-    const previousSchoolIdInput = document.querySelector('input[name="school_id_from_previous_school"]');
     const lrnInput = document.getElementById('lrn_input') || document.querySelector('input[name="LRN"]');
     const lrnFeedback = document.getElementById('lrn_feedback');
     const lrnCheckUrl = @json($checkLrnRoute ?? ($isPublicEnrollment ? route('register.check-lrn') : null));
@@ -1052,36 +1080,6 @@
         });
     }
 
-    function preventDuplicateElectives() {
-        electiveSelects.forEach((select) => {
-            const otherValues = electiveSelects.filter((other) => other !== select).map((other) => other.value).filter(Boolean);
-            Array.from(select.options).forEach((option) => {
-                option.disabled = Boolean(option.value) && otherValues.includes(option.value);
-            });
-        });
-    }
-
-    function updateElectiveRequirement(isSenior) {
-        const isAcademic = trackSelect?.selectedOptions[0]?.dataset.academic === '1';
-        const requiredCount = isAcademic ? 2 : 1;
-
-        electiveSelects.forEach((select, index) => {
-            const required = isSenior && index < requiredCount;
-            select.required = required;
-            select.closest('[data-elective-slot]')?.classList.toggle('hidden', isSenior && index >= requiredCount);
-            if (!required && index >= requiredCount) {
-                select.value = '';
-            }
-        });
-
-        if (electiveHelp) {
-            electiveHelp.textContent = isAcademic
-                ? 'Choose two different electives. You may select electives from any cluster.'
-                : 'Choose one elective. You may select it from any cluster.';
-        }
-        preventDuplicateElectives();
-    }
-
     function toggleSeniorFields() {
         const isSenior = ['11', '12'].includes(gradeLevelSelect?.value);
         semesterContainer.classList.toggle('hidden', !isSenior);
@@ -1096,7 +1094,11 @@
         if (clusterSelect) {
             clusterSelect.required = isSenior;
         }
-        updateElectiveRequirement(isSenior);
+        const requiredElectives = trackSelect?.selectedOptions[0]?.dataset.academic === '1' ? 2 : 1;
+        electiveSelects.forEach((select, index) => {
+            select.required = isSenior && index < requiredElectives;
+            select.closest('[data-elective-slot]')?.classList.toggle('hidden', !isSenior || index >= requiredElectives);
+        });
         semesterInputs.forEach((input) => {
             input.required = isSenior;
         });
@@ -1110,10 +1112,9 @@
             if (trackSelect) {
                 trackSelect.value = '';
             }
-            electiveSelects.forEach((select) => select.value = '');
+            electiveSelects.forEach((select) => { select.value = ''; });
         } else {
             updateClusters();
-            preventDuplicateElectives();
         }
     }
 
@@ -1622,6 +1623,10 @@
         emailInput.setCustomValidity('');
         setEmailFeedback('');
 
+        if (emailInput.value.trim() === '') {
+            return true;
+        }
+
         if (!emailInput.checkValidity()) {
             emailInput.reportValidity();
             return false;
@@ -1773,9 +1778,8 @@
     });
     trackSelect?.addEventListener('change', () => {
         updateClusters(true);
-        updateElectiveRequirement(['11', '12'].includes(gradeLevelSelect?.value));
+        toggleSeniorFields();
     });
-    electiveSelects.forEach((select) => select.addEventListener('change', preventDuplicateElectives));
     document.querySelectorAll('input[name="learner_type"]').forEach((input) => {
         input.addEventListener('change', toggleLearnerDetails);
     });
@@ -1837,9 +1841,6 @@
 
             normalizePhilippineContactNumber(input);
         });
-    });
-    previousSchoolIdInput?.addEventListener('input', () => {
-        previousSchoolIdInput.value = previousSchoolIdInput.value.replace(/\D/g, '').slice(0, 6);
     });
     lrnInput?.addEventListener('input', () => {
         normalizeLrnInput();
