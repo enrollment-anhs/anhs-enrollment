@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
             SchoolInformationSeeder::class,
             ReligionSeeder::class,
             AcademicYearSeeder::class,
+            SectionSeeder::class,
             MovementReasonSeeder::class,
             DocumentReturnReasonSeeder::class,
             DocumentTypeSeeder::class,
