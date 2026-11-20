@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: anhs-sis
+    name: anhs-enrollment
     runtime: docker
     plan: free
     maxShutdownDelaySeconds: 300
@@ -17,7 +17,7 @@ services:
       # config/database.php reads DB_URL (not DATABASE_URL).
       - key: DB_URL
         fromDatabase:
-          name: anhs-sis-db
+          name: anhs-enrollment-db
           property: connectionString
       - key: RUN_QUEUE_WORKER
         value: "true"
@@ -55,7 +55,7 @@ services:
       #   value: public
 
 databases:
-  - name: anhs-sis-db
+  - name: anhs-enrollment-db
     plan: free
-    databaseName: anhs_sis
-    user: anhs_sis
+    databaseName: anhs_enrollment
+    user: anhs_enrollment

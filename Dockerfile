@@ -1,12 +1,18 @@
-# Install only the PHP packages required in production.
-FROM composer:2 AS dependencies
+# Install production packages with the same PHP version as the application.
+# `composer:2` is a floating tag and currently uses PHP 8.6, while the locked
+# dependency set supports PHP through 8.5. Copy Composer into a pinned PHP 8.3
+# image instead of allowing the build stage to drift independently.
+FROM php:8.3-cli-alpine AS dependencies
+
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /app
 COPY composer.json composer.lock ./
 # Laravel's Composer hook calls `php artisan package:discover`, but this stage
 # intentionally has only composer files. Package discovery runs at container
 # startup, after Render has supplied the application environment.
-RUN composer install --no-dev --no-scripts --no-interaction --no-progress --prefer-dist --optimize-autoloader
+RUN apk add --no-cache git unzip \
+    && composer install --no-dev --no-scripts --no-interaction --no-progress --prefer-dist --optimize-autoloader
 
 # Build browser assets separately so the production image does not need Node.js.
 # Flux's stylesheet is imported from Composer's vendor directory, so copy that
