@@ -8,16 +8,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <style>
-        .captcha-answer-correct {
-            border-color: #16a34a !important;
-            box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.18) !important;
-        }
-
-        .captcha-answer-incorrect {
-            border-color: #dc2626 !important;
-            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.18) !important;
-        }
-
         [x-cloak] {
             display: none !important;
         }
@@ -76,9 +66,9 @@
                         <div class="mb-4 p-3 rounded bg-red-50 border-l-4 border-red-500 text-red-700 text-sm" data-test="login-error">
                             {{ trans('auth.throttle', ['seconds' => $loginLockoutMinutes * 60, 'minutes' => $loginLockoutMinutes]) }}
                         </div>
-                        @elseif ($errors->has('username') || $errors->has('password') || $errors->has('captcha_answer'))
+                        @elseif ($errors->has('username') || $errors->has('password'))
                         <div class="mb-4 p-3 rounded bg-red-50 border-l-4 border-red-500 text-red-700 text-sm" data-test="login-error">
-                            <p>{{ $errors->first('username') ?: $errors->first('password') ?: $errors->first('captcha_answer') }}</p>
+                            <p>{{ $errors->first('username') ?: $errors->first('password') }}</p>
                             @if ($loginAttemptsRemaining !== null)
                             <p class="mt-1 font-semibold" data-test="login-attempts-remaining">
                                 {{ trans_choice('auth.attempts_remaining', $loginAttemptsRemaining, ['count' => $loginAttemptsRemaining]) }}
@@ -134,39 +124,6 @@
                                 </div>
                             </div>
 
-                            <div class="mb-8">
-                                <div class="flex flex-wrap items-center gap-2 sm:gap-3">
-                                    <input class="w-14 text-center shadow-sm appearance-none border rounded py-2 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 sm:w-16"
-                                        type="text"
-                                        value="{{ $captcha_first }}"
-                                        readonly>
-                                    <span class="text-gray-600 text-lg font-semibold">+</span>
-                                    <input class="w-14 text-center shadow-sm appearance-none border rounded py-2 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 sm:w-16"
-                                        type="text"
-                                        value="{{ $captcha_second }}"
-                                        readonly>
-                                    <span class="text-gray-600 text-lg font-semibold">=</span>
-                                    <input class="w-16 text-center shadow-sm appearance-none border rounded py-2 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 sm:w-20"
-                                        id="captcha_answer"
-                                        name="captcha_answer"
-                                        type="text"
-                                        inputmode="numeric"
-                                        pattern="\d{1,3}"
-                                        maxlength="3"
-                                        autocomplete="off"
-                                        data-expected-answer="{{ $captcha_first + $captcha_second }}"
-                                        required>
-                                    <button type="button"
-                                        onclick="window.location.reload()"
-                                        class="ml-1 inline-flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        aria-label="Refresh security check">
-                                        <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M16 10a6 6 0 10-2.05 4.47M16 10V6m0 4h-4" />
-                                        </svg>
-                                    </button>
-                                </div>
-                            </div>
-
                             <button class="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 px-4 rounded focus:outline-none focus:ring-4 focus:ring-blue-300 transition duration-300 transform active:scale-95"
                                 type="submit">
                                 Sign In
@@ -195,18 +152,6 @@
                 eyeSlashIcon.classList.add('hidden');
             }
         }
-
-        const captchaAnswer = document.getElementById('captcha_answer');
-        captchaAnswer?.addEventListener('input', function () {
-            this.value = this.value.replace(/\D/g, '').slice(0, 3);
-
-            const hasAnswer = this.value !== '';
-            const isCorrect = hasAnswer && Number(this.value) === Number(this.dataset.expectedAnswer);
-
-            this.classList.toggle('captcha-answer-correct', isCorrect);
-            this.classList.toggle('captcha-answer-incorrect', hasAnswer && !isCorrect);
-            this.setAttribute('aria-invalid', String(hasAnswer && !isCorrect));
-        });
 
     </script>
     <x-auth-session-sync />

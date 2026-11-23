@@ -53,15 +53,9 @@ class FortifyServiceProvider extends ServiceProvider
     private function configureViews(): void
     {
         Fortify::loginView(function (Request $request) {
-            $first = random_int(1, 49);
-            $second = random_int(1, 50 - $first);
             $limiter = app(FortifyLoginRateLimiter::class);
 
-            session(['login_captcha_answer' => $first + $second]);
-
             return view('livewire.auth.login', [
-                'captcha_first' => $first,
-                'captcha_second' => $second,
                 'loginAttemptsRemaining' => $limiter->shouldShowRemainingAttempts($request)
                     ? $limiter->remainingAttempts($request)
                     : null,

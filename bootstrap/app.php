@@ -3,13 +3,13 @@
 use App\Http\Middleware\EnsureAccountIsActive;
 use App\Http\Middleware\EnsureAdmin;
 use App\Http\Middleware\EnsureGuidanceCounselor;
-use App\Http\Middleware\EnsureLoginCaptcha;
 use App\Http\Middleware\EnsurePrincipal;
 use App\Http\Middleware\EnsureSectionIsActive;
 use App\Http\Middleware\EnsureStudent;
 use App\Http\Middleware\EnsureTeacher;
 use App\Http\Middleware\ForcePasswordChange;
 use App\Http\Middleware\PreventBackHistory;
+use App\Http\Middleware\RedirectStaffLogout;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -29,12 +29,12 @@ return Application::configure(basePath: dirname(__DIR__))
             EnsureAccountIsActive::class,
             EnsureSectionIsActive::class,
             \App\Http\Middleware\RecordAuditTrail::class,
+            RedirectStaffLogout::class,
         ]);
 
         $middleware->alias([
             'admin' => EnsureAdmin::class,
             'guidance' => EnsureGuidanceCounselor::class,
-            'login_captcha' => EnsureLoginCaptcha::class,
             'principal' => EnsurePrincipal::class,
             'student' => EnsureStudent::class,
             'teacher' => EnsureTeacher::class,

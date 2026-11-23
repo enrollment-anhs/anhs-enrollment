@@ -22,14 +22,18 @@ function createLoginLockoutStaff(string $username = 'lockout.user'): Staff
 
 function attemptLockoutLogin(string $username, string $password): TestResponse
 {
-    test()->get(route('login'));
-
     return test()->from(route('login'))->post(route('login.store'), [
         'username' => $username,
         'password' => $password,
-        'captcha_answer' => session('login_captcha_answer'),
     ]);
 }
+
+test('the staff login page does not show a math security check', function () {
+    $this->get(route('login'))
+        ->assertOk()
+        ->assertDontSee('captcha_answer', false)
+        ->assertDontSee('Security check expired.', false);
+});
 
 test('five consecutive failed logins lock the account for fifteen minutes', function () {
     $user = createLoginLockoutStaff();

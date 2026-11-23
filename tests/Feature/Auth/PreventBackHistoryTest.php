@@ -46,7 +46,7 @@ test('logout responses tell the browser not to restore the previous page', funct
 
     $response = $this->actingAs($admin)->post(route('logout'));
 
-    $response->assertRedirect(route('home'));
+    $response->assertRedirect(route('login'));
     $this->assertGuest();
     assertBrowserMustNotStore($response);
 });
@@ -63,7 +63,7 @@ test('visiting a protected page after logout redirects to login', function () {
     $admin = createPreventBackHistoryAdmin();
 
     $this->actingAs($admin)->get(route('admin.dashboard'))->assertOk();
-    $this->post(route('logout'))->assertRedirect(route('home'));
+    $this->post(route('logout'))->assertRedirect(route('login'));
 
     $this->get(route('admin.dashboard'))->assertRedirect(route('login'));
 });

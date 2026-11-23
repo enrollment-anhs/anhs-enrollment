@@ -38,12 +38,9 @@ function createInactiveAccessTeacher(string $status = 'active'): Staff
 test('inactive staff cannot log in with the correct password', function () {
     $teacher = createInactiveAccessTeacher('inactive');
 
-    $this->get(route('login'));
-
     $response = $this->from(route('login'))->post(route('login.store'), [
         'username' => $teacher->username,
         'password' => 'password',
-        'captcha_answer' => session('login_captcha_answer'),
     ]);
 
     $response->assertRedirect(route('login'));
@@ -75,12 +72,9 @@ test('reactivated staff can log in again', function () {
     $teacher = createInactiveAccessTeacher('inactive');
     $teacher->update(['status' => 'active']);
 
-    $this->get(route('login'));
-
     $this->from(route('login'))->post(route('login.store'), [
         'username' => $teacher->username,
         'password' => 'password',
-        'captcha_answer' => session('login_captcha_answer'),
     ])->assertSessionHasNoErrors()
         ->assertRedirect(route('dashboard', absolute: false));
 
@@ -98,12 +92,9 @@ test('inactive students cannot log in with the correct password', function () {
         'status' => 'inactive',
     ]);
 
-    $this->get(route('login'));
-
     $response = $this->from(route('login'))->post(route('login.store'), [
         'username' => $student->username,
         'password' => 'password',
-        'captcha_answer' => session('login_captcha_answer'),
     ]);
 
     $response->assertRedirect(route('login'));
