@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Cluster;
+use App\Models\GradeLevel;
 use App\Models\PreferredCourse;
 use App\Models\Role;
 use App\Models\Staff;
@@ -98,6 +99,48 @@ test('admin can view tracks and clusters before subjects', function () {
     $clusters->assertSee('Science, Technology, Engineering, and Mathematics');
     $clusters->assertSee('id="clustersTabPanel" class=""', false);
     $clusters->assertDontSee('Preferred Courses');
+});
+
+test('grade levels are managed through the add and edit modal', function () {
+    $admin = createSubjectPageAdmin('admin.subjects.grade-level-modal');
+    $gradeLevel = GradeLevel::query()->create([
+        'grade_label' => 'Grade 7',
+        'category' => 'Junior High School',
+    ]);
+
+    $response = $this->actingAs($admin)->get(route('admin.subject-config.index', ['tab' => 'grade-levels']));
+
+    $response->assertOk()
+        ->assertSee('id="addGradeLevelHeaderBtn"', false)
+        ->assertSee('Add Grade Level')
+        ->assertSee('>Actions</th>', false)
+        ->assertDontSee('>Save</th>', false)
+        ->assertSee('id="gradeLevelModal"', false)
+        ->assertSee('openGradeLevelModal', false)
+        ->assertSee('Edit Grade 7');
+
+    $this->actingAs($admin)
+        ->from(route('admin.subject-config.index', ['tab' => 'grade-levels']))
+        ->post(route('admin.subject-config.grade-levels.store'), [
+            '_form' => 'grade_level',
+            'grade_label' => 'Grade 8',
+            'category' => 'Junior High School',
+        ])
+        ->assertSessionHasNoErrors();
+
+    $this->actingAs($admin)
+        ->from(route('admin.subject-config.index', ['tab' => 'grade-levels']))
+        ->put(route('admin.subject-config.grade-levels.update', $gradeLevel), [
+            '_form' => 'grade_level',
+            'grade_level_id' => $gradeLevel->grade_ID,
+            'grade_label' => 'Grade 7 Updated',
+            'category' => 'Senior High School',
+        ])
+        ->assertSessionHasNoErrors();
+
+    expect($gradeLevel->fresh()->grade_label)->toBe('Grade 7 Updated')
+        ->and($gradeLevel->fresh()->category)->toBe('Senior High School')
+        ->and(GradeLevel::query()->where('grade_label', 'Grade 8')->exists())->toBeTrue();
 });
 
 test('admin can search tracks and filter clusters by track', function () {

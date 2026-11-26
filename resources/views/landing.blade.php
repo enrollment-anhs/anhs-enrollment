@@ -59,7 +59,7 @@
                 <div class="max-w-3xl text-white">
                     <p class="mb-4 text-xs font-semibold uppercase tracking-[0.25em] text-white/80 sm:text-sm sm:tracking-[0.35em]">Welcome</p>
                     <h1 class="mb-6 text-3xl font-bold leading-tight sm:text-5xl lg:text-6xl">
-                        Welcome to the Agusan National High School Student Information System
+                        Welcome to the Agusan National High School Enrollment System
                     </h1>
                     {{-- <p class="mb-8 text-lg leading-relaxed text-white/85 sm:text-xl">
                         Start your application, review enrollment information, and check your approval status from one place.

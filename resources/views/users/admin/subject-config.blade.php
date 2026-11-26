@@ -16,8 +16,9 @@
     $subjectModalOpen = old('_form') === 'subject' && $errors->any();
     $trackModalOpen = old('_form') === 'track' && $errors->any();
     $clusterModalOpen = old('_form') === 'cluster' && $errors->any();
+    $gradeLevelModalOpen = old('_form') === 'grade_level' && $errors->any();
     $requestedTab = request('tab', 'tracks');
-    $activeTab = $subjectModalOpen ? 'grade-levels'
+    $activeTab = ($subjectModalOpen || $gradeLevelModalOpen) ? 'grade-levels'
         : ($trackModalOpen ? 'tracks'
         : ($clusterModalOpen ? 'clusters'
         : (in_array($requestedTab, ['tracks', 'clusters', 'grade-levels'], true) ? $requestedTab : 'tracks')));
@@ -33,6 +34,8 @@
             class="{{ $activeTab === 'tracks' ? 'inline-flex' : 'hidden' }} items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90" style="background-color: #296374;">Add Track</button>
         <button type="button" id="addClusterHeaderBtn" onclick="openClusterModal()"
             class="{{ $activeTab === 'clusters' ? 'inline-flex' : 'hidden' }} items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90" style="background-color: #296374;">Add Cluster</button>
+        <button type="button" id="addGradeLevelHeaderBtn" onclick="openGradeLevelModal()"
+            class="{{ $activeTab === 'grade-levels' ? 'inline-flex' : 'hidden' }} items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90" style="background-color: #296374;">Add Grade Level</button>
     </div>
 </div>
 
@@ -177,15 +180,7 @@
     </div>
 
     <div id="grade-levelsTabPanel" class="{{ $activeTab === 'grade-levels' ? '' : 'hidden' }} p-5">
-        <div class="mb-5 rounded-lg border border-gray-200 bg-slate-50 p-4">
-            <form method="POST" action="{{ route($managementRoutePrefix.'subject-config.grade-levels.store') }}" class="grid gap-3 sm:grid-cols-[1fr_220px_auto] sm:items-end">
-                @csrf
-                <div><label class="mb-1 block text-xs font-bold uppercase tracking-wide text-gray-600">Grade level</label><input name="grade_label" placeholder="e.g. Grade 7" required class="{{ $fieldClass }} border-gray-200"></div>
-                <div><label class="mb-1 block text-xs font-bold uppercase tracking-wide text-gray-600">School level</label><select name="category" required class="{{ $fieldClass }} border-gray-200"><option value="Junior High School">Junior High School</option><option value="Senior High School">Senior High School</option></select></div>
-                <button class="h-10 rounded-lg bg-[#296374] px-4 text-sm font-bold text-white">Add Grade Level</button>
-            </form>
-        </div>
-        <div class="overflow-x-auto rounded-lg border border-gray-200"><table class="w-full min-w-[560px] text-left text-sm"><thead class="bg-gray-50 text-xs font-bold uppercase tracking-wide text-gray-500"><tr><th class="px-4 py-3">Grade Level</th><th class="px-4 py-3">School Level</th><th class="px-4 py-3 text-right">Save</th></tr></thead><tbody class="divide-y divide-gray-100">@forelse($gradeLevels as $gradeLevel)<tr><form method="POST" action="{{ route($managementRoutePrefix.'subject-config.grade-levels.update', $gradeLevel) }}">@csrf @method('PUT')<td class="px-4 py-2"><input name="grade_label" value="{{ $gradeLevel->grade_label }}" required class="{{ $fieldClass }} border-gray-200"></td><td class="px-4 py-2"><select name="category" class="{{ $fieldClass }} border-gray-200"><option value="Junior High School" @selected($gradeLevel->category === 'Junior High School')>Junior High School</option><option value="Senior High School" @selected($gradeLevel->category === 'Senior High School')>Senior High School</option></select></td><td class="px-4 py-2 text-right"><button class="rounded-lg border border-[#296374]/30 px-3 py-2 text-xs font-bold text-[#296374]">Save</button></td></form></tr>@empty<tr><td colspan="3" class="px-4 py-10 text-center text-gray-500">No grade levels configured.</td></tr>@endforelse</tbody></table></div>
+        <div class="overflow-x-auto rounded-lg border border-gray-200"><table class="w-full min-w-[560px] text-left text-sm"><thead class="bg-gray-50 text-xs font-bold uppercase tracking-wide text-gray-500"><tr><th class="px-4 py-3">Grade Level</th><th class="px-4 py-3">School Level</th><th class="px-4 py-3 text-right">Actions</th></tr></thead><tbody class="divide-y divide-gray-100">@forelse($gradeLevels as $gradeLevel)<tr class="hover:bg-slate-50/70"><td class="px-4 py-3 font-semibold text-gray-800">{{ $gradeLevel->grade_label }}</td><td class="px-4 py-3 text-gray-600">{{ $gradeLevel->category }}</td><td class="px-4 py-2 text-right"><button type="button" onclick='openGradeLevelModal(@json(['grade_ID' => $gradeLevel->grade_ID, 'grade_label' => $gradeLevel->grade_label, 'category' => $gradeLevel->category]))' class="rounded-lg p-2 text-gray-500 transition hover:bg-gray-100 hover:text-[#296374]" title="Edit grade level" aria-label="Edit {{ $gradeLevel->grade_label }}"><svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg></button></td></tr>@empty<tr><td colspan="3" class="px-4 py-10 text-center text-gray-500">No grade levels configured.</td></tr>@endforelse</tbody></table></div>
     </div>
 
     <div id="subjectsTabPanel" class="hidden">
@@ -419,6 +414,41 @@
     --}}
 </div>
 
+<div id="gradeLevelModal" role="dialog" aria-modal="true" aria-labelledby="gradeLevelModalTitle" data-open="{{ $gradeLevelModalOpen ? 'true' : 'false' }}"
+    class="fixed inset-0 z-[200] {{ $gradeLevelModalOpen ? 'flex' : 'hidden' }} items-center justify-center bg-slate-900/70 p-4">
+    <div class="w-full max-w-md overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl">
+        <div class="flex items-center justify-between bg-[#296374] px-5 py-4">
+            <h3 id="gradeLevelModalTitle" class="text-lg font-semibold text-white">{{ old('grade_level_id') ? 'Edit Grade Level' : 'Add Grade Level' }}</h3>
+            <button type="button" onclick="closeGradeLevelModal()" class="rounded-lg p-2 text-white/80 hover:bg-white/10 hover:text-white" aria-label="Close"><svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+        </div>
+        <form id="gradeLevelForm" action="{{ old('grade_level_id') ? route($managementRoutePrefix.'subject-config.grade-levels.update', ['gradeLevel' => old('grade_level_id')]) : route($managementRoutePrefix.'subject-config.grade-levels.store') }}" method="POST">
+            @csrf
+            <input type="hidden" name="_form" value="grade_level">
+            <input type="hidden" name="grade_level_id" id="grade_level_id" value="{{ old('_form') === 'grade_level' ? old('grade_level_id') : '' }}">
+            <input type="hidden" id="grade_level_method" name="_method" value="{{ old('grade_level_id') ? 'PUT' : 'POST' }}">
+            <div class="space-y-4 px-5 py-5">
+                <div>
+                    <label for="grade_label" class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-gray-600">Grade Level <span class="text-red-500">*</span></label>
+                    <input id="grade_label" name="grade_label" value="{{ old('_form') === 'grade_level' ? old('grade_label') : '' }}" placeholder="e.g. Grade 7" required class="{{ $fieldClass }} {{ old('_form') === 'grade_level' && $errors->has('grade_label') ? 'border-red-300' : 'border-gray-200' }}">
+                    @if (old('_form') === 'grade_level') @error('grade_label')<p class="mt-1 text-xs font-medium text-red-600">{{ $message }}</p>@enderror @endif
+                </div>
+                <div>
+                    <label for="grade_category" class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-gray-600">School Level <span class="text-red-500">*</span></label>
+                    <select id="grade_category" name="category" required class="{{ $fieldClass }} {{ old('_form') === 'grade_level' && $errors->has('category') ? 'border-red-300' : 'border-gray-200' }}">
+                        <option value="Junior High School" @selected(old('_form') === 'grade_level' && old('category') === 'Junior High School')>Junior High School</option>
+                        <option value="Senior High School" @selected(old('_form') === 'grade_level' && old('category') === 'Senior High School')>Senior High School</option>
+                    </select>
+                    @if (old('_form') === 'grade_level') @error('category')<p class="mt-1 text-xs font-medium text-red-600">{{ $message }}</p>@enderror @endif
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 border-t border-gray-100 bg-gray-50 px-5 py-3">
+                <button type="button" onclick="closeGradeLevelModal()" class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700">Cancel</button>
+                <button id="gradeLevelSubmit" type="submit" class="rounded-lg bg-[#296374] px-4 py-2 text-sm font-semibold text-white">{{ old('grade_level_id') ? 'Update Grade Level' : 'Save Grade Level' }}</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <div id="trackModal" role="dialog" aria-modal="true" aria-labelledby="trackModalTitle" data-open="{{ $trackModalOpen ? 'true' : 'false' }}"
     class="fixed inset-0 z-[200] {{ $trackModalOpen ? 'flex' : 'hidden' }} items-center justify-center bg-slate-900/70 p-4">
     <div class="w-full max-w-md overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl">
@@ -648,13 +678,14 @@
 --}}
 
 <script>
+    const gradeLevelModalElement = document.getElementById('gradeLevelModal');
     const trackModalElement = document.getElementById('trackModal');
     const clusterModalElement = document.getElementById('clusterModal');
     const subjectModalElement = document.getElementById('subjectModal');
 
     // Move overlays out of the layout's main stacking context so they sit above
     // both the fixed top bar and sidebar.
-    document.body.append(trackModalElement, clusterModalElement, subjectModalElement);
+    document.body.append(gradeLevelModalElement, trackModalElement, clusterModalElement, subjectModalElement);
 
     function syncSubjectFields() {
         const schoolLevel = document.getElementById('subject_school_level').value;
@@ -699,6 +730,7 @@
         const tabs = ['tracks', 'clusters', 'grade-levels'];
         const addTrackBtn = document.getElementById('addTrackHeaderBtn');
         const addClusterBtn = document.getElementById('addClusterHeaderBtn');
+        const addGradeLevelBtn = document.getElementById('addGradeLevelHeaderBtn');
 
         tabs.forEach((tabName) => {
             const isActive = tabName === tab;
@@ -714,7 +746,7 @@
             indicator.classList.toggle('hidden', !isActive);
         });
 
-        [[addTrackBtn, 'tracks'], [addClusterBtn, 'clusters']].forEach(([button, tabName]) => {
+        [[addTrackBtn, 'tracks'], [addClusterBtn, 'clusters'], [addGradeLevelBtn, 'grade-levels']].forEach(([button, tabName]) => {
             const show = tab === tabName;
             button.classList.toggle('hidden', !show);
             button.classList.toggle('inline-flex', show);
@@ -729,6 +761,28 @@
         modal.classList.toggle('hidden', !open);
         modal.classList.toggle('flex', open);
         modal.setAttribute('data-open', open ? 'true' : 'false');
+    }
+
+    function openGradeLevelModal(gradeLevel = null) {
+        const form = document.getElementById('gradeLevelForm');
+        const updateRouteTemplate = '{{ route($managementRoutePrefix.'subject-config.grade-levels.update', ['gradeLevel' => '__GRADE_LEVEL__']) }}';
+        const isEditing = Boolean(gradeLevel);
+
+        document.getElementById('gradeLevelModalTitle').textContent = isEditing ? 'Edit Grade Level' : 'Add Grade Level';
+        document.getElementById('gradeLevelSubmit').textContent = isEditing ? 'Update Grade Level' : 'Save Grade Level';
+        document.getElementById('grade_level_method').value = isEditing ? 'PUT' : 'POST';
+        document.getElementById('grade_level_id').value = gradeLevel?.grade_ID || '';
+        form.action = isEditing
+            ? updateRouteTemplate.replace('__GRADE_LEVEL__', gradeLevel.grade_ID)
+            : '{{ route($managementRoutePrefix.'subject-config.grade-levels.store') }}';
+        document.getElementById('grade_label').value = gradeLevel?.grade_label || '';
+        document.getElementById('grade_category').value = gradeLevel?.category || 'Junior High School';
+        setModalVisibility(gradeLevelModalElement, true);
+        document.getElementById('grade_label').focus();
+    }
+
+    function closeGradeLevelModal() {
+        setModalVisibility(gradeLevelModalElement, false);
     }
 
     function openTrackModal(track = null) {
@@ -862,6 +916,10 @@
         if (e.target === this) closeTrackModal();
     });
 
+    gradeLevelModalElement.addEventListener('click', function (e) {
+        if (e.target === this) closeGradeLevelModal();
+    });
+
     clusterModalElement.addEventListener('click', function (e) {
         if (e.target === this) closeClusterModal();
     });
@@ -874,6 +932,7 @@
         if (document.getElementById('subjectModal').getAttribute('data-open') === 'true') {
             closeSubjectModal();
         }
+        if (gradeLevelModalElement.getAttribute('data-open') === 'true') closeGradeLevelModal();
         if (trackModalElement.getAttribute('data-open') === 'true') closeTrackModal();
         if (clusterModalElement.getAttribute('data-open') === 'true') closeClusterModal();
     });
