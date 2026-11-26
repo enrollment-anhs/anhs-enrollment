@@ -24,6 +24,12 @@ Route::get('/', function () {
         : view('landing');
 })->name('home');
 
+// The staff portal was moved to /staff-login. Keep the former endpoint
+// available for bookmarks, open browser tabs, and forms rendered before the
+// move so they do not fail with a 404.
+Route::get('/login', fn () => redirect()->route('login'));
+Route::post('/login', fn () => redirect()->route('login.store', [], 307));
+
 Route::get('/register', [ApplicationController::class, 'create'])->name('register');
 Route::get('/register/check-lrn', [ApplicationController::class, 'checkLrn'])->name('register.check-lrn');
 Route::get('/register/check-email', [ApplicationController::class, 'checkEmail'])->name('register.check-email');
